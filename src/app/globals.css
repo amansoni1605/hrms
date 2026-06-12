@@ -1,26 +1,382 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* ── Breakpoints ──────────────────────────────────────────────────────── */
+  --breakpoint-*: initial;
+  --breakpoint-sm:  640px;
+  --breakpoint-md:  768px;
+  --breakpoint-lg:  1024px;
+  --breakpoint-xl:  1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ── Neutral scale ────────────────────────────────────────────────────── */
+  --color-neutral-1:  #FFFFFF;
+  --color-neutral-2:  #FAFAFA;
+  --color-neutral-3:  #F5F5F5;
+  --color-neutral-4:  #F0F0F0;
+  --color-neutral-5:  #DEDEDE;
+  --color-neutral-6:  #BFBFBF;
+  --color-neutral-7:  #8C8C8C;
+  --color-neutral-8:  #595959;
+  --color-neutral-9:  #32343A;
+  --color-neutral-10: #212427;
+  --color-neutral-11: #262626;
+  --color-black-08:   #00000014;
+
+  /* ── VR Blue brand palette ────────────────────────────────────────────── */
+  --color-vr-blue-1:  #E8EEF5;
+  --color-vr-blue-2:  #B9C9E1;
+  --color-vr-blue-3:  #97AFD2;
+  --color-vr-blue-4:  #678ABD;
+  --color-vr-blue-5:  #4973B1;
+  --color-vr-blue-6:  #1C509D;
+  --color-vr-blue-7:  #19498F;
+  --color-vr-blue-8:  #14396F;
+  --color-vr-blue-9:  #0F2C56;
+  --color-vr-blue-10: #0C2242;
+
+  /* ── Semantic colours ─────────────────────────────────────────────────── */
+  --color-semantics-red-1:  #FDE6E6;
+  --color-semantics-red-2:  #FBC2C2;
+  --color-semantics-red-3:  #F89191;
+  --color-semantics-red-4:  #F45E5E;
+  --color-semantics-red-5:  #F12E2E;
+  --color-semantics-red-6:  #EE0000;
+  --color-semantics-red-7:  #CA0000;
+  --color-semantics-red-8:  #A90000;
+  --color-semantics-red-9:  #880000;
+  --color-semantics-red-10: #6B0000;
+
+  --color-semantics-orange-6: #FFA500;
+  --color-semantics-orange-7: #D98C00;
+
+  --color-semantics-yellow-6: #F0CB07;
+  --color-semantics-yellow-7: #DEBB00;
+
+  --color-semantics-green-1:  #E7F6ED;
+  --color-semantics-green-2:  #C6E8D4;
+  --color-semantics-green-3:  #99D6B1;
+  --color-semantics-green-4:  #69C38D;
+  --color-semantics-green-5:  #3CB16B;
+  --color-semantics-green-6:  #11A04A;
+  --color-semantics-green-7:  #0E883F;
+  --color-semantics-green-8:  #0C7235;
+  --color-semantics-green-9:  #0A5B2A;
+  --color-semantics-green-10: #084821;
+
+  --color-semantics-blue-1:  #ECF0FC;
+  --color-semantics-blue-2:  #D1DBF8;
+  --color-semantics-blue-3:  #ADBFF2;
+  --color-semantics-blue-4:  #87A1EC;
+  --color-semantics-blue-5:  #6384E6;
+  --color-semantics-blue-6:  #4169E1;
+  --color-semantics-blue-7:  #3759BF;
+  --color-semantics-blue-8:  #2E4BA0;
+
+  --color-semantics-aqua-1: #F4FAFF;
+  --color-semantics-aqua-2: #E5F4FF;
+
+  /* ── Table accent colours ─────────────────────────────────────────────── */
+  --color-table-green-1: #D0EFDC;
+  --color-table-green-2: #99D6B1;
+  --color-table-yellow-1: #FFF5C1;
+  --color-table-yellow-2: #FFD994;
+  --color-table-red-1:   #FF9D9D;
+  --color-table-red-2:   #FFC0C0;
+
+  --color-accent-success: #12783C;
+  --color-orange-event:   #EE7F22;
+
+  /* ── Core surface tokens ──────────────────────────────────────────────── */
+  --color-stroke:      #E5EAF1;
+  --color-narco-black: rgba(0, 0, 0, 0.14);
+  --color-ghost-white: #FCFBFF;
+  --color-background:  var(--color-ghost-white);
+  --color-foreground:  var(--color-neutral-10);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --font-in-rg: Inter, system-ui, sans-serif;
+  --font-in-sb: Inter, system-ui, sans-serif;
+  --font-in-bd: Inter, system-ui, sans-serif;
+  --font-in-md: Inter, system-ui, sans-serif;
+  --font-jk-bd: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-jk-sb: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-jk-md: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-jk-rg: 'Plus Jakarta Sans', Inter, sans-serif;
+
+  /* ── Type scale (rem, base 10px = 62.5%) ─────────────────────────────── */
+  --text-fs-10: 1.0rem;
+  --text-fs-12: 1.2rem;
+  --text-fs-13: 1.3rem;
+  --text-fs-14: 1.4rem;
+  --text-fs-16: 1.6rem;
+  --text-fs-18: 1.8rem;
+  --text-fs-20: 2.0rem;
+  --text-fs-22: 2.2rem;
+  --text-fs-24: 2.4rem;
+  --text-fs-26: 2.6rem;
+  --text-fs-28: 2.8rem;
+  --text-fs-30: 3.0rem;
+  --text-fs-32: 3.2rem;
+  --text-fs-36: 3.6rem;
+  --text-fs-40: 4.0rem;
+  --text-fs-50: 5.0rem;
+
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-card:   0px 0.5px 2px 0px var(--color-narco-black);
+  --shadow-top:    0px -1px 4px 0px #00000033;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ── Base layer ──────────────────────────────────────────────────────────────── */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-stroke, currentColor);
+  }
 
-@media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background:          var(--color-background);
+    --foreground:          var(--color-foreground);
+    --radius-none:         0;
+    --radius-sm:           0.8rem;
+    --radius-md:           1.0rem;
+    --radius-lg:           1.2rem;
+    --radius-xl:           1.6rem;
+    --radius-2xl:          1.8rem;
+    --radius-3xl:          2.2rem;
+    --radius-full:         50%;
+    /* shadcn surface tokens */
+    --card:                var(--color-neutral-1);
+    --card-foreground:     var(--color-neutral-10);
+    --popover:             var(--color-neutral-1);
+    --popover-foreground:  var(--color-neutral-10);
+    --primary:             var(--color-vr-blue-6);
+    --primary-foreground:  var(--color-neutral-1);
+    --secondary:           var(--color-neutral-3);
+    --secondary-foreground:var(--color-neutral-9);
+    --muted:               var(--color-neutral-3);
+    --muted-foreground:    var(--color-neutral-7);
+    --accent:              var(--color-vr-blue-1);
+    --accent-foreground:   var(--color-vr-blue-8);
+    --destructive:         var(--color-semantics-red-6);
+    --border:              var(--color-stroke);
+    --input:               var(--color-stroke);
+    --ring:                var(--color-vr-blue-4);
+    --radius:              0.8rem;
+  }
+
+  html {
+    font-size: 62.5%; /* 1rem = 10px */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-in-rg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  [class^="text-fs-"],
+  [class*=" text-fs-"] {
+    line-height: 130%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Semantic pill badges ─────────────────────────────────────────────────────
+   .gain_pill  → positive metrics, successful states
+   .loss_pill  → negative metrics, errors, alerts
+── ─────────────────────────────────────────────────────────────────────────── */
+.gain_pill {
+  display:          inline-block;
+  color:            var(--color-semantics-green-7);
+  font-size:        var(--text-fs-12);
+  font-family:      var(--font-in-sb);
+  font-weight:      600;
+  border-radius:    0.8rem;
+  background-color: rgba(17, 160, 74, 0.10);
+  padding:          5px 8px 5px 23px;
+  background-image: url('/res/icons/up-arrow-green.svg');
+  background-repeat:   no-repeat;
+  background-position: left 6px center;
+  background-size:     14px;
 }
+
+.loss_pill {
+  display:          inline-block;
+  color:            var(--color-semantics-red-6);
+  font-size:        var(--text-fs-12);
+  font-family:      var(--font-in-sb);
+  font-weight:      600;
+  border-radius:    0.8rem;
+  background-color: rgba(253, 230, 230, 1);
+  padding:          5px 8px 5px 23px;
+  background-image: url('/res/icons/down-arrow-red.svg');
+  background-repeat:   no-repeat;
+  background-position: left 6px center;
+  background-size:     14px;
+}
+
+/* ── Thin scrollbar ──────────────────────────────────────────────────────────── */
+.custom-scroll                              { scrollbar-width: thin; }
+.custom-scroll::-webkit-scrollbar           { width: 5px; }
+.custom-scroll::-webkit-scrollbar-track     { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb     { background: transparent; }
+.custom-scroll:hover::-webkit-scrollbar-thumb {
+  background:    rgba(0, 0, 0, 0.10);
+  border-radius: 10px;
+}
+
+/* ── Dashed dividers ─────────────────────────────────────────────────────────── */
+.dashed-hr {
+  border: none; height: 2px; width: 100%;
+  background-image: repeating-linear-gradient(
+    to right, #E5EAF1 0 4px, transparent 4px 8px
+  );
+}
+.dashed-hr-sm {
+  border: none; height: 1px; width: 100%;
+  background-image: repeating-linear-gradient(
+    to right, #E5EAF1 0 2px, transparent 2px 4px
+  );
+}
+
+/* ── HRMS atomic surface classes ─────────────────────────────────────────────── */
+
+.hrms-card {
+  background:    var(--color-neutral-1);
+  border:        1px solid var(--color-stroke);
+  border-radius: var(--radius-lg);
+  box-shadow:    var(--shadow-card);
+  padding:       1.6rem;
+}
+
+.hrms-section-label {
+  color:          var(--color-neutral-7);
+  font-family:    var(--font-in-sb);
+  font-size:      var(--text-fs-10);
+  font-weight:    600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Table header / body cells */
+.hrms-th {
+  color:          var(--color-neutral-7);
+  font-family:    var(--font-in-sb);
+  font-size:      var(--text-fs-12);
+  font-weight:    600;
+  padding:        1rem 1.6rem;
+  text-align:     left;
+  letter-spacing: 0.04em;
+  border-bottom:  1px solid var(--color-stroke);
+  white-space:    nowrap;
+  background:     var(--color-neutral-2);
+}
+.hrms-td {
+  color:          var(--color-neutral-9);
+  font-family:    var(--font-in-rg);
+  font-size:      var(--text-fs-12);
+  padding:        0.8rem 1.6rem;
+  border-bottom:  1px solid var(--color-neutral-4);
+  vertical-align: middle;
+}
+
+/* Status badge variants */
+.hrms-badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           0.4rem;
+  padding:       0.2rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-family:   var(--font-in-sb);
+  font-size:     var(--text-fs-12);
+  font-weight:   600;
+  white-space:   nowrap;
+}
+.hrms-badge--success { color: var(--color-semantics-green-7); background: rgba(17,160,74,0.10); }
+.hrms-badge--warning { color: var(--color-semantics-orange-7); background: rgba(255,165,0,0.12); }
+.hrms-badge--danger  { color: var(--color-semantics-red-6);   background: rgba(238,0,0,0.08); }
+.hrms-badge--info    { color: var(--color-semantics-blue-7);  background: var(--color-semantics-blue-1); }
+.hrms-badge--neutral { color: var(--color-neutral-8);         background: var(--color-neutral-4); }
+
+/* Buttons */
+.hrms-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.6rem; padding: 0.8rem 1.6rem;
+  background: var(--color-vr-blue-6); color: var(--color-neutral-1);
+  font-family: var(--font-in-sb); font-size: var(--text-fs-14); font-weight: 600;
+  border-radius: var(--radius-md); border: none; cursor: pointer;
+  transition: background 150ms ease, opacity 150ms ease; white-space: nowrap;
+}
+.hrms-btn-primary:hover    { background: var(--color-vr-blue-7); }
+.hrms-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hrms-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.6rem; padding: 0.8rem 1.6rem;
+  background: transparent; color: var(--color-neutral-9);
+  font-family: var(--font-in-sb); font-size: var(--text-fs-14); font-weight: 600;
+  border-radius: var(--radius-md); border: 1px solid var(--color-stroke);
+  cursor: pointer; transition: background 150ms ease, border-color 150ms ease;
+}
+.hrms-btn-ghost:hover    { background: var(--color-neutral-3); border-color: var(--color-neutral-5); }
+.hrms-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Input */
+.hrms-input {
+  width: 100%; padding: 0.8rem 1.2rem;
+  background: var(--color-neutral-1); border: 1px solid var(--color-stroke);
+  border-radius: var(--radius-md); color: var(--color-neutral-10);
+  font-family: var(--font-in-rg); font-size: var(--text-fs-14);
+  outline: none; transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.hrms-input::placeholder { color: var(--color-neutral-6); }
+.hrms-input:focus {
+  border-color: var(--color-vr-blue-5);
+  box-shadow:   0 0 0 3px rgba(28, 80, 157, 0.12);
+}
+
+/* KPI stat card */
+.hrms-kpi-card {
+  background: var(--color-neutral-1); border: 1px solid var(--color-stroke);
+  border-radius: var(--radius-lg); padding: 1.6rem; box-shadow: var(--shadow-card);
+}
+.hrms-kpi-card__label {
+  color: var(--color-neutral-7); font-family: var(--font-in-rg); font-size: var(--text-fs-12);
+}
+.hrms-kpi-card__value {
+  color: var(--color-neutral-10); font-family: var(--font-jk-bd);
+  font-size: var(--text-fs-24); font-weight: 700; line-height: 120%; margin-top: 0.4rem;
+}
+.hrms-kpi-card__sub {
+  color: var(--color-neutral-6); font-family: var(--font-in-rg);
+  font-size: var(--text-fs-12); margin-top: 0.4rem;
+}
+
+/* Sidebar nav item */
+.hrms-nav-item {
+  display: flex; align-items: center; gap: 1.0rem; padding: 0.8rem 1.2rem;
+  border-radius: var(--radius-md); color: var(--color-neutral-8);
+  font-family: var(--font-in-md); font-size: var(--text-fs-14);
+  text-decoration: none; transition: background 120ms ease, color 120ms ease; cursor: pointer;
+}
+.hrms-nav-item:hover          { background: var(--color-vr-blue-1); color: var(--color-vr-blue-7); }
+.hrms-nav-item--active        { background: var(--color-vr-blue-1); color: var(--color-vr-blue-7);
+                                  font-family: var(--font-in-sb); font-weight: 600; }
+
+/* Risk progress bar */
+.hrms-risk-bar__track { height: 0.5rem; background: var(--color-neutral-4); border-radius: 9999px; overflow: hidden; }
+.hrms-risk-bar__fill--low    { background: var(--color-semantics-green-6); }
+.hrms-risk-bar__fill--medium { background: var(--color-semantics-orange-6); }
+.hrms-risk-bar__fill--high   { background: var(--color-semantics-red-6); }

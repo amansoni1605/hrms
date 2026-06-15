@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest) {
     const updated = await Tenant.findByIdAndUpdate(
       tenantId,
       { $set },
-      { new: true, select: 'brandColor loginTagline loginBgOverlay' },
+      { new: true, strict: false, select: 'brandColor loginTagline loginBgOverlay' },
     ).lean();
 
     return NextResponse.json({ data: updated });

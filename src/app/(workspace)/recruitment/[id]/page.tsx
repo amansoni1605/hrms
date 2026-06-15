@@ -11,6 +11,29 @@ interface Applicant {
   source: string; status: string; notes: string; createdAt: string;
   candidateStatus?: string; employeeId?: string; hiredAt?: string;
 }
+interface ManagerOption {
+  _id: string; employeeCode: string; jobTitle: string; departmentName?: string;
+}
+interface DeptOption {
+  _id: string; name: string; code: string;
+}
+
+const COUNTRIES: { code: string; label: string }[] = [
+  { code: 'IN', label: 'India' },
+  { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom' },
+  { code: 'SG', label: 'Singapore' },
+  { code: 'AE', label: 'UAE' },
+  { code: 'AU', label: 'Australia' },
+  { code: 'CA', label: 'Canada' },
+  { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' },
+  { code: 'NL', label: 'Netherlands' },
+  { code: 'JP', label: 'Japan' },
+  { code: 'HK', label: 'Hong Kong' },
+  { code: 'NZ', label: 'New Zealand' },
+  { code: 'ZA', label: 'South Africa' },
+];
 interface Opening {
   _id: string; title: string; designation: string; status: string;
   headcount: number; description: string; requirements: string[];
@@ -57,8 +80,12 @@ export default function RecruitmentDetailPage({ params }: { params: Promise<{ id
   const [saving,     setSaving]     = useState(false);
   const [advancing,  setAdvancing]  = useState<string | null>(null);
   const [hireModal,  setHireModal]  = useState<Applicant | null>(null);
-  const [hireForm,   setHireForm]   = useState({ jobTitle: '', departmentId: '', departmentName: '', managerId: '', managerName: '', startDate: '', countryCode: 'IN', employmentType: 'full_time' });
+  const [hireForm,   setHireForm]   = useState({ jobTitle: '', departmentId: '', departmentName: '', managerId: '', managerName: '', startDate: '', countryCode: 'IN', employmentType: 'full_time', baseSalary: '' });
   const [hiring,     setHiring]     = useState(false);
+  const [managers,    setManagers]    = useState<ManagerOption[]>([]);
+  const [departments, setDepartments] = useState<DeptOption[]>([]);
+  const [jobTitles,   setJobTitles]   = useState<string[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', source: 'direct', notes: '' });
 
   const load = useCallback(async () => {
@@ -119,8 +146,9 @@ export default function RecruitmentDetailPage({ params }: { params: Promise<{ id
 
   const hire = async () => {
     if (!hireModal) return;
-    if (!hireForm.jobTitle.trim()) { toast.push({ kind: 'error', title: 'Job title required' }); return; }
-    if (!hireForm.startDate)       { toast.push({ kind: 'error', title: 'Start date required' }); return; }
+    if (!hireForm.jobTitle.trim())  { toast.push({ kind: 'error', title: 'Job title required' }); return; }
+    if (!hireForm.departmentId)     { toast.push({ kind: 'error', title: 'Department required' }); return; }
+    if (!hireForm.startDate)        { toast.push({ kind: 'error', title: 'Start date required' }); return; }
     setHiring(true);
     const res = await fetch(`/api/recruitment/applicants/${hireModal._id}/hire`, {
       method: 'POST',
@@ -139,9 +167,26 @@ export default function RecruitmentDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  const openHireModal = (a: Applicant) => {
-    setHireForm({ jobTitle: opening?.designation ?? '', departmentId: '', departmentName: opening?.departmentId?.name ?? '', managerId: '', managerName: '', startDate: '', countryCode: 'IN', employmentType: 'full_time' });
+  const openHireModal = async (a: Applicant) => {
+    setHireForm({ jobTitle: opening?.designation ?? '', departmentId: '', departmentName: opening?.departmentId?.name ?? '', managerId: '', managerName: '', startDate: '', countryCode: 'IN', employmentType: 'full_time', baseSalary: '' });
     setHireModal(a);
+    setModalLoading(true);
+    try {
+      const [empRes, deptRes] = await Promise.all([
+        fetch('/api/employees?limit=200'),
+        fetch('/api/departments'),
+      ]);
+      const empJson  = await empRes.json()  as { data?: ManagerOption[] };
+      const deptJson = await deptRes.json() as { data?: DeptOption[] };
+      const emps = empJson.data ?? [];
+      setManagers(emps);
+      setDepartments(deptJson.data ?? []);
+      const titles = Array.from(new Set(emps.map((e) => e.jobTitle).filter(Boolean)));
+      if (opening?.designation && !titles.includes(opening.designation)) titles.unshift(opening.designation);
+      setJobTitles(titles);
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   if (loading || !opening) {
@@ -220,24 +265,74 @@ export default function RecruitmentDetailPage({ params }: { params: Promise<{ id
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <SF label="Job Title *">
-                <input value={hireForm.jobTitle} onChange={(e) => setHireForm({ ...hireForm, jobTitle: e.target.value })} className="hrms-input" placeholder="e.g. Senior Analyst" />
+                <input
+                  list="jt-list"
+                  value={hireForm.jobTitle}
+                  onChange={(e) => setHireForm({ ...hireForm, jobTitle: e.target.value })}
+                  className="hrms-input"
+                  placeholder={modalLoading ? 'Loading…' : 'Select or type job title'}
+                  disabled={modalLoading}
+                />
+                <datalist id="jt-list">
+                  {jobTitles.map((t) => <option key={t} value={t} />)}
+                </datalist>
               </SF>
               <SF label="Start Date *">
                 <input type="date" value={hireForm.startDate} onChange={(e) => setHireForm({ ...hireForm, startDate: e.target.value })} className="hrms-input" />
               </SF>
-              <SF label="Department Name">
-                <input value={hireForm.departmentName} onChange={(e) => setHireForm({ ...hireForm, departmentName: e.target.value })} className="hrms-input" placeholder="e.g. Finance" />
+              <SF label="Department *">
+                <select
+                  value={hireForm.departmentId}
+                  onChange={(e) => {
+                    const d = departments.find((d) => d._id === e.target.value);
+                    setHireForm({ ...hireForm, departmentId: e.target.value, departmentName: d?.name ?? '' });
+                  }}
+                  className="hrms-input"
+                  disabled={modalLoading}
+                >
+                  <option value="">{modalLoading ? 'Loading…' : '— Select department —'}</option>
+                  {departments.map((d) => (
+                    <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+                  ))}
+                </select>
               </SF>
               <SF label="Employment Type">
                 <select value={hireForm.employmentType} onChange={(e) => setHireForm({ ...hireForm, employmentType: e.target.value })} className="hrms-input">
                   {['full_time','part_time','contractor','intern'].map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                 </select>
               </SF>
-              <SF label="Manager Name">
-                <input value={hireForm.managerName} onChange={(e) => setHireForm({ ...hireForm, managerName: e.target.value })} className="hrms-input" placeholder="Direct manager name" />
+              <SF label="Manager">
+                <select
+                  value={hireForm.managerId}
+                  onChange={(e) => {
+                    const m = managers.find((m) => m._id === e.target.value);
+                    setHireForm({ ...hireForm, managerId: e.target.value, managerName: m ? `${m.employeeCode} — ${m.jobTitle}` : '' });
+                  }}
+                  className="hrms-input"
+                  disabled={modalLoading}
+                >
+                  <option value="">{modalLoading ? 'Loading…' : '— Select manager (optional) —'}</option>
+                  {managers.map((m) => (
+                    <option key={m._id} value={m._id}>
+                      {m.employeeCode} — {m.jobTitle}{m.departmentName ? ` (${m.departmentName})` : ''}
+                    </option>
+                  ))}
+                </select>
               </SF>
-              <SF label="Country Code">
-                <input value={hireForm.countryCode} onChange={(e) => setHireForm({ ...hireForm, countryCode: e.target.value.toUpperCase().slice(0, 2) })} className="hrms-input" placeholder="IN" maxLength={2} />
+              <SF label="Country">
+                <select value={hireForm.countryCode} onChange={(e) => setHireForm({ ...hireForm, countryCode: e.target.value })} className="hrms-input">
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
+                  ))}
+                </select>
+              </SF>
+              <SF label="Base Salary (Annual)">
+                <input
+                  type="number" min={0} step={1000}
+                  value={hireForm.baseSalary}
+                  onChange={(e) => setHireForm({ ...hireForm, baseSalary: e.target.value })}
+                  className="hrms-input" placeholder="e.g. 800000"
+                />
               </SF>
             </div>
             <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>

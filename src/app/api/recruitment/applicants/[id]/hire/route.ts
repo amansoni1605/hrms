@@ -6,8 +6,9 @@ import {
   WorkspaceUser,
   WorkspaceOnboarding,
   WorkspaceDepartment,
+  Tenant,
 } from '@/models/workspace.models';
-import { TenantContext }                 from '@/infrastructure/multiTenantCore';
+import { TenantContext, encryptEmployeeFields } from '@/infrastructure/multiTenantCore';
 import { sendWelcomeEmail }             from '@/lib/mailer';
 import { createHash }                   from 'node:crypto';
 import crypto                           from 'node:crypto';
@@ -58,39 +59,83 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const startDate     = body['startDate']
       ? new Date(String(body['startDate']))
       : (applicant.offerJoiningDate ?? new Date());
-    const managerId    = body['managerId']   ? String(body['managerId'])   : undefined;
+    const managerIdRaw = body['managerId']   ? String(body['managerId'])   : undefined;
     const managerName  = body['managerName'] ? String(body['managerName']) : undefined;
     const countryCode  = body['countryCode'] ? String(body['countryCode']).toUpperCase().slice(0, 2) : 'IN';
+    const baseSalary   = body['baseSalary']  ? Number(body['baseSalary'])  : 0;
 
     if (!jobTitle)
       return NextResponse.json({ error: 'jobTitle is required' }, { status: 400 });
+    if (!departmentId)
+      return NextResponse.json({ error: 'departmentId is required' }, { status: 400 });
+    if (managerIdRaw && !mongoose.isValidObjectId(managerIdRaw))
+      return NextResponse.json({ error: 'managerId is not a valid id' }, { status: 400 });
+
+    const managerId = managerIdRaw ? new mongoose.Types.ObjectId(managerIdRaw) : undefined;
+
+    // ── Fetch department for code ────────────────────────────────────────────
+    const dept = await WorkspaceDepartment.findById(departmentId).select('code name').lean() as
+      { code: string; name?: string } | null;
+    if (!dept)
+      return NextResponse.json({ error: 'Department not found' }, { status: 404 });
+
+    // ── Validate manager exists (if provided) ────────────────────────────────
+    if (managerId) {
+      const managerExists = await WorkspaceEmployee.exists({ _id: managerId, isActive: true });
+      if (!managerExists)
+        return NextResponse.json({ error: 'Selected manager not found or inactive' }, { status: 404 });
+    }
+
+    // ── Encrypt PII + financial fields ───────────────────────────────────────
+    const encFields = await encryptEmployeeFields(ctx.tenantId.toString(), {
+      fullName:   applicant.name,
+      email:      applicant.email,
+      baseSalary: baseSalary || 0,
+      phone:      applicant.phone || undefined,
+    });
+
+    // ── Guard: reject if this email is already an employee ───────────────────
+    if (encFields.emailHash) {
+      const duplicate = await WorkspaceEmployee.exists({ emailHash: encFields.emailHash });
+      if (duplicate) {
+        return NextResponse.json(
+          { error: `An employee with the email ${applicant.email} already exists in this organisation.` },
+          { status: 409 },
+        );
+      }
+    }
+
+    // ── Fetch tenant name for welcome email ─────────────────────────────────
+    const tenant = await Tenant.findById(ctx.tenantId).select('displayName legalName').lean() as
+      { displayName?: string; legalName: string } | null;
+    const companyName = tenant?.displayName ?? tenant?.legalName ?? 'Your Company';
 
     // ── 1. Create WorkspaceEmployee ──────────────────────────────────────────
     const count = await WorkspaceEmployee.countDocuments({});
     const employeeCode = `EMP-${String(count + 1).padStart(4, '0')}`;
+    const probationEndDate = new Date(startDate.getTime() + 90 * 86_400_000);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const employee = await (WorkspaceEmployee as any).create({
       tenantId:        ctx.tenantId,
       employeeCode,
       jobTitle,
-      departmentId:    departmentId ?? undefined,
-      departmentName:  body['departmentName'] ? String(body['departmentName']) : undefined,
-      managerId:       managerId,
-      managerName:     managerName,
+      departmentId:    new mongoose.Types.ObjectId(departmentId),
+      departmentName:  dept.name,
+      departmentCode:  dept.code,
+      managerId,
+      managerName,
       countryCode,
-      timezone:        body['timezone'] ? String(body['timezone']) : 'UTC',
-      locale:          body['locale']   ? String(body['locale'])   : 'en-US',
+      timezone:        body['timezone']     ? String(body['timezone'])                   : 'Asia/Kolkata',
+      locale:          body['locale']       ? String(body['locale'])                     : 'en-IN',
       currencyCode:    body['currencyCode'] ? String(body['currencyCode']).toUpperCase() : 'INR',
       hireDate:        startDate,
+      probationEndDate,
       employeeStatus:  'pre_hire',
       employmentType:  body['employmentType'] ? String(body['employmentType']) : 'full_time',
       isActive:        true,
+      ...encFields,
     }) as { _id: mongoose.Types.ObjectId };
-
-    if (departmentId) {
-      await WorkspaceDepartment.findByIdAndUpdate(departmentId, { $inc: { headCount: 1 } });
-    }
 
     // ── 2. Create WorkspaceUser login account ────────────────────────────────
     const tempPassword = `Welcome@${Math.floor(1000 + Math.random() * 9000)}`;
@@ -130,7 +175,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       tenantId:               ctx.tenantId,
       employeeId:             employee._id,
       applicantId:            applicant._id,
-      managerId:              managerId ? new mongoose.Types.ObjectId(managerId) : undefined,
+      managerId,
       status:                 'not_started',
       startDate,
       targetCompletionDate:   target30,
@@ -139,19 +184,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       tasks: DEFAULT_TASKS.map((t) => ({ ...t, status: 'pending' })),
     }) as { _id: mongoose.Types.ObjectId };
 
-    // ── 4. Update applicant with pipeline links ───────────────────────────────
+    // ── 4. Update applicant + increment department headcount ──────────────────
     applicant.candidateStatus = 'ONBOARDING_ACTIVE';
     applicant.employeeId      = employee._id;
     applicant.onboardingId    = onboarding._id;
     applicant.hiredAt         = new Date();
     await applicant.save();
 
+    await WorkspaceDepartment.findByIdAndUpdate(departmentId, { $inc: { headCount: 1 } });
+
     // ── 5. Welcome email (fire-and-forget) ────────────────────────────────────
     void sendWelcomeEmail({
       to:           applicant.email,
       employeeName: applicant.name,
       tempPassword,
-      companyName:  'Your Company',
+      companyName,
     });
 
     await auditEvent({
@@ -159,7 +206,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       targetCollection: 'ws_employees',
       targetDocumentId: employee._id.toString(),
       newStateHash:     createHash('sha256').update(employeeCode + applicant.email).digest('hex'),
-      changeSummary:    { employeeCode, applicantId: id, action: 'hired_from_ats' },
+      changeSummary:    { employeeCode, applicantId: id, departmentName: dept.name, action: 'hired_from_ats' },
     });
 
     return NextResponse.json({

@@ -78,10 +78,13 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res  = await fetch('/api/settings');
-    const json = await res.json();
-    setSettings(json.data);
-    setLoading(false);
+    try {
+      const res  = await fetch('/api/settings');
+      const json = await res.json();
+      if (res.ok) setSettings(json.data);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);

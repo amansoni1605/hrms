@@ -8,7 +8,7 @@ interface OnboardTask { _id?: string; title: string; category: string; assignedT
 interface Onboarding {
   _id: string; status: string; tasks: OnboardTask[];
   startDate: string; targetCompletionDate: string; completedAt?: string;
-  employeeId: { employeeCode: string; firstName: string; lastName: string; jobTitle: string } | null;
+  employeeId: { employeeCode: string; name: string; jobTitle: string; departmentName?: string } | null;
 }
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -134,7 +134,8 @@ export default function OnboardingPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontFamily: 'var(--font-in-sb)', fontWeight: 600, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
-                      {emp ? `${emp.firstName} ${emp.lastName}` : '—'} <span style={{ color: 'var(--color-neutral-7)', fontWeight: 400 }}>· {emp?.jobTitle}</span>
+                      {emp?.name ?? '—'} <span style={{ color: 'var(--color-neutral-5)', fontSize: 11, fontWeight: 400 }}>{emp?.employeeCode}</span>
+                      {emp?.jobTitle && <span style={{ color: 'var(--color-neutral-7)', fontWeight: 400 }}> · {emp.jobTitle}</span>}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.4rem' }}>
                       <div style={{ flex: 1, maxWidth: 180, height: 6, background: 'var(--color-stroke)', borderRadius: 99 }}>

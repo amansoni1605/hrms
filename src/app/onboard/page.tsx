@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter }                   from 'next/navigation';
 import {
   Building2, Palette, User, LayoutList, CalendarDays,
@@ -28,6 +28,16 @@ const STEPS = [
   { id: 4, label: 'Departments',      icon: LayoutList },
   { id: 5, label: 'Leave Policy',     icon: CalendarDays },
   { id: 6, label: 'Invite Team',      icon: UserPlus },
+];
+
+const COUNTRIES: { code: string; label: string }[] = [
+  { code: 'IN', label: 'India' },       { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom'},{ code: 'SG', label: 'Singapore' },
+  { code: 'AE', label: 'UAE' },          { code: 'AU', label: 'Australia' },
+  { code: 'CA', label: 'Canada' },       { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' },       { code: 'NL', label: 'Netherlands' },
+  { code: 'JP', label: 'Japan' },        { code: 'HK', label: 'Hong Kong' },
+  { code: 'NZ', label: 'New Zealand' }, { code: 'ZA', label: 'South Africa' },
 ];
 
 const INDUSTRIES = [
@@ -88,12 +98,34 @@ function StepCompanyProfile({ tenant, onSave }: { tenant: TenantData; onSave: (d
     postalCode:   tenant.registeredAddress?.postalCode ?? '',
     country:      tenant.registeredAddress?.country    ?? tenant.primaryCountry,
   });
-  const [errors,  setErrors]  = useState<Errors>({});
-  const [saving,  setSaving]  = useState(false);
+  const [errors,       setErrors]       = useState<Errors>({});
+  const [saving,       setSaving]       = useState(false);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [autoFilled,   setAutoFilled]   = useState(false);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const set = (k: string, v: string) => {
     setForm(p => ({ ...p, [k]: v }));
     if (errors[k]) setErrors(p => ({ ...p, [k]: '' }));
   };
+
+  const lookupPincode = useCallback(async (code: string, country: string) => {
+    const cc = country.trim().toUpperCase().slice(0, 2);
+    if (!cc || code.replace(/[^A-Z0-9]/gi, '').length < 4) return;
+    setPincodeLoading(true);
+    setAutoFilled(false);
+    try {
+      const res = await fetch(`https://api.zippopotam.us/${cc}/${encodeURIComponent(code.trim())}`);
+      if (!res.ok) return;
+      const data = await res.json() as { places?: { 'place name': string; state: string }[] };
+      const place = data.places?.[0];
+      if (place) {
+        setForm(p => ({ ...p, city: place['place name'] ?? p.city, state: place['state'] ?? p.state }));
+        setAutoFilled(true);
+      }
+    } catch { /* silently ignore — user can fill manually */ }
+    finally { setPincodeLoading(false); }
+  }, []);
 
   const validate = (): Errors => {
     const e: Errors = {};
@@ -198,27 +230,49 @@ function StepCompanyProfile({ tenant, onSave }: { tenant: TenantData; onSave: (d
               placeholder="123 Main Street, Floor 4" />
           </FieldRow>
           <div style={GRID2}>
-            <FieldRow label="City">
-              <input className="hrms-input" style={INPUT}
-                value={form.city} onChange={e => set('city', e.target.value)}
-                placeholder="Mumbai" />
+            <FieldRow label="Postal Code">
+              <div style={{ position: 'relative' }}>
+                <input className="hrms-input" style={{ ...INPUT, paddingRight: pincodeLoading ? '2rem' : undefined }}
+                  value={form.postalCode}
+                  onChange={e => {
+                    const v = e.target.value;
+                    set('postalCode', v);
+                    setAutoFilled(false);
+                    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+                    lookupTimer.current = setTimeout(() => lookupPincode(v, form.country), 600);
+                  }}
+                  placeholder="e.g. 400001" />
+                {pincodeLoading && (
+                  <Loader2 size={13} className="animate-spin"
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-vr-blue-6)', pointerEvents: 'none' }} />
+                )}
+              </div>
             </FieldRow>
-            <FieldRow label="State / Province">
-              <input className="hrms-input" style={INPUT}
-                value={form.state} onChange={e => set('state', e.target.value)}
-                placeholder="Maharashtra" />
+            <FieldRow label="Country">
+              <select className="hrms-input" style={INPUT}
+                value={form.country}
+                onChange={e => {
+                  set('country', e.target.value);
+                  if (form.postalCode.trim().length >= 4) {
+                    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+                    lookupTimer.current = setTimeout(() => lookupPincode(form.postalCode, e.target.value), 300);
+                  }
+                }}>
+                <option value="">— Select country —</option>
+                {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
+              </select>
             </FieldRow>
           </div>
           <div style={GRID2}>
-            <FieldRow label="Postal code">
+            <FieldRow label={autoFilled ? 'City ✓ auto-filled' : 'City'}>
               <input className="hrms-input" style={INPUT}
-                value={form.postalCode} onChange={e => set('postalCode', e.target.value)}
-                placeholder="400001" />
+                value={form.city} onChange={e => { set('city', e.target.value); setAutoFilled(false); }}
+                placeholder="Mumbai" />
             </FieldRow>
-            <FieldRow label="Country">
+            <FieldRow label={autoFilled ? 'State / Province ✓ auto-filled' : 'State / Province'}>
               <input className="hrms-input" style={INPUT}
-                value={form.country} onChange={e => set('country', e.target.value)}
-                placeholder="IN" />
+                value={form.state} onChange={e => { set('state', e.target.value); setAutoFilled(false); }}
+                placeholder="Maharashtra" />
             </FieldRow>
           </div>
         </div>

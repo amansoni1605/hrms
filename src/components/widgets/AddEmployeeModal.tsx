@@ -30,6 +30,15 @@ const EMPLOYMENT_TYPES = ['full_time','part_time','contractor','intern','advisor
 const CURRENCIES       = ['USD','EUR','GBP','INR','AED','SGD','AUD','CAD','JPY'];
 const PAY_FREQUENCIES  = ['monthly','semi_monthly','biweekly','weekly'];
 const TIMEZONES        = ['UTC','Asia/Kolkata','America/New_York','America/Los_Angeles','Europe/London','Europe/Berlin','Asia/Singapore','Asia/Tokyo','Australia/Sydney'];
+const COUNTRIES: { code: string; label: string }[] = [
+  { code: 'IN', label: 'India' }, { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom' }, { code: 'SG', label: 'Singapore' },
+  { code: 'AE', label: 'UAE' }, { code: 'AU', label: 'Australia' },
+  { code: 'CA', label: 'Canada' }, { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' }, { code: 'NL', label: 'Netherlands' },
+  { code: 'JP', label: 'Japan' }, { code: 'HK', label: 'Hong Kong' },
+  { code: 'NZ', label: 'New Zealand' }, { code: 'ZA', label: 'South Africa' },
+];
 
 interface FormData {
   // Step 1
@@ -324,9 +333,13 @@ export function AddEmployeeModal({ open, onClose, onCreated }: AddEmployeeModalP
                 </Field>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                <Field label="Country Code *" error={errors.countryCode}>
-                  <input value={form.countryCode} onChange={(e) => set('countryCode', e.target.value.toUpperCase().slice(0, 2))}
-                         className="hrms-input" placeholder="US" maxLength={2} />
+                <Field label="Country *" error={errors.countryCode}>
+                  <select value={form.countryCode} onChange={(e) => set('countryCode', e.target.value)}
+                          className="hrms-input">
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
+                    ))}
+                  </select>
                 </Field>
                 <Field label="Timezone" error={errors.timezone}>
                   <select value={form.timezone} onChange={(e) => set('timezone', e.target.value)}

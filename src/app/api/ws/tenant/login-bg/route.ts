@@ -46,7 +46,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No tenantId in session' }, { status: 400 });
     }
 
-    await Tenant.findByIdAndUpdate(tenantId, { $set: { loginBgData } });
+    // strict:false bypasses Mongoose schema-cache issues during hot-reload in dev;
+    // without it, fields added after initial model compilation are silently stripped.
+    const result = await Tenant.updateOne(
+      { _id: tenantId },
+      { $set: { loginBgData } },
+      { strict: false },
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'Tenant not found — try signing out and back in.' }, { status: 404 });
+    }
 
     return NextResponse.json({ loginBgData });
   }, ['super_admin', 'hr_admin']);
@@ -60,7 +70,7 @@ export async function DELETE(req: NextRequest) {
     if (!tenantId) {
       return NextResponse.json({ error: 'No tenantId in session' }, { status: 400 });
     }
-    await Tenant.findByIdAndUpdate(tenantId, { $unset: { loginBgData: 1 } });
+    await Tenant.updateOne({ _id: tenantId }, { $unset: { loginBgData: 1 } }, { strict: false });
     return NextResponse.json({ removed: true });
   }, ['super_admin', 'hr_admin']);
 }

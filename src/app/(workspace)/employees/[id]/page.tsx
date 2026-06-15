@@ -90,6 +90,16 @@ const HIDEABLE_NAV = [
 
 const EMPLOYMENT_TYPES = ['full_time','part_time','contractor','intern','advisor','digital_worker'];
 const EMPLOYEE_STATUSES = ['pre_hire','active','on_leave','pip','suspended','terminated','retired'];
+const TIMEZONES = ['UTC','Asia/Kolkata','Asia/Singapore','Asia/Tokyo','Asia/Hong_Kong','Australia/Sydney','Europe/London','Europe/Berlin','Europe/Amsterdam','America/New_York','America/Chicago','America/Los_Angeles','America/Toronto','America/Sao_Paulo'];
+const COUNTRIES: { code: string; label: string }[] = [
+  { code: 'IN', label: 'India' }, { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom' }, { code: 'SG', label: 'Singapore' },
+  { code: 'AE', label: 'UAE' }, { code: 'AU', label: 'Australia' },
+  { code: 'CA', label: 'Canada' }, { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' }, { code: 'NL', label: 'Netherlands' },
+  { code: 'JP', label: 'Japan' }, { code: 'HK', label: 'Hong Kong' },
+  { code: 'NZ', label: 'New Zealand' }, { code: 'ZA', label: 'South Africa' },
+];
 const SKILL_PROFICIENCIES = ['awareness','working','practitioner','expert','authority'];
 const SKILL_VERIFIED_VIA  = ['self_assessment','peer_review_360','project_delivery','certification','manager_eval','open_source_contribution'];
 
@@ -778,12 +788,17 @@ export default function EmployeeDetailPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   <DetailRow label="Country Code">
                     {editing
-                      ? <EI field="countryCode" edits={edits} setEdits={setEdits} maxLength={2} />
+                      ? (
+                        <select value={edits['countryCode'] ?? ''} onChange={(e) => setEdits((p) => ({ ...p, countryCode: e.target.value }))}
+                                className="hrms-input" style={{ padding: '0.4rem 0.8rem', maxWidth: 200 }}>
+                          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
+                        </select>
+                      )
                       : <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-fs-14)' }}>{emp.countryCode}</span>}
                   </DetailRow>
                   <DetailRow label="Timezone">
                     {editing
-                      ? <EI field="timezone" edits={edits} setEdits={setEdits} placeholder="UTC, Asia/Kolkata…" />
+                      ? <ES field="timezone" edits={edits} setEdits={setEdits} options={TIMEZONES} />
                       : <span style={{ fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{emp.timezone}</span>}
                   </DetailRow>
                   <DetailRow label="Locale" mono>{emp.locale}</DetailRow>

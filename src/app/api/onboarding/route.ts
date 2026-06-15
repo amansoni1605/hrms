@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse }  from 'next/server';
 import { withRoute }                  from '@/lib/withRoute';
-import { WorkspaceOnboarding, WorkspaceHRSettings } from '@/models/workspace.models';
+import { WorkspaceOnboarding, WorkspaceHRSettings, WorkspaceUser } from '@/models/workspace.models';
 import { TenantContext }              from '@/infrastructure/multiTenantCore';
 import mongoose                       from 'mongoose';
 
@@ -12,10 +12,33 @@ export const GET = withRoute(async (req) => {
   const query: Record<string, unknown> = {};
   if (status) query['status'] = status;
 
-  const data = await WorkspaceOnboarding.find(query)
-    .populate('employeeId', 'employeeCode firstName lastName jobTitle')
+  const records = await WorkspaceOnboarding.find(query)
+    .populate('employeeId', 'employeeCode jobTitle departmentName')
     .sort({ createdAt: -1 })
     .lean();
+
+  type PopulatedEmp = { _id: mongoose.Types.ObjectId; employeeCode: string; jobTitle: string; departmentName?: string };
+
+  // Employee names are AES-encrypted; fetch them from WorkspaceUser (plaintext name field)
+  const empIds = records
+    .map((r) => (r.employeeId as unknown as PopulatedEmp | null)?._id)
+    .filter((id): id is mongoose.Types.ObjectId => id != null);
+
+  const users = await WorkspaceUser.find({ employeeId: { $in: empIds } })
+    .select('employeeId name')
+    .lean();
+
+  const nameByEmpId = new Map(users.map((u) => [u.employeeId!.toString(), u.name]));
+
+  const data = records.map((r) => {
+    const empObj = r.employeeId as unknown as PopulatedEmp | null;
+    return {
+      ...r,
+      employeeId: empObj
+        ? { ...empObj, name: nameByEmpId.get(empObj._id.toString()) ?? empObj.employeeCode }
+        : null,
+    };
+  });
 
   return NextResponse.json({ data });
 }, ['super_admin','hr_admin','hr_manager']);

@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
-  serverExternalPackages: ['razorpay'],
+  serverExternalPackages: ['razorpay', 'pdfkit'],
 };
 
 export default nextConfig;

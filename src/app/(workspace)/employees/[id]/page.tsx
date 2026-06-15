@@ -1209,10 +1209,21 @@ function EmployeePayslips({ employeeId, currencyCode }: { employeeId: string; cu
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
               <Badge variant={SLIP_STATUS_VARIANT[s.status] ?? 'neutral'}>
                 {s.status.replace(/_/g, ' ')}
               </Badge>
+              {(s.status === 'paid' || s.status === 'approved') && (
+                <a
+                  href={`/api/payroll/payslip?runId=${s._id}&employeeId=${employeeId}`}
+                  download={`payslip-${MONTH_SHORT[s.month - 1]}-${s.year}.pdf`}
+                  className="hrms-btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '0.25rem 0.6rem', fontSize: 11 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Receipt size={10} /> PDF
+                </a>
+              )}
             </div>
           </div>
         );

@@ -68,6 +68,27 @@ export async function POST(
 
     const { action } = await req.json().catch(() => ({ action: null }));
 
+    if (action === 'mark_audit_passed') {
+      const run = await WorkspacePayrollRun.findById(runId).lean();
+      if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+      if (!['draft', 'agentic_audit_queued', 'audit_failed'].includes(run.runStatus)) {
+        return NextResponse.json({ error: `Run is already in "${run.runStatus}" state.` }, { status: 409 });
+      }
+      const updated = await WorkspacePayrollRun.findByIdAndUpdate(
+        runId,
+        { $set: { runStatus: 'audit_passed', criticalFlagCount: 0 } },
+        { new: true },
+      );
+      await auditEvent({
+        actionType: 'PAYROLL_AUDIT_MANUAL_PASS',
+        targetCollection: 'ws_payroll_runs',
+        targetDocumentId: runId,
+        newStateHash: createHash('sha256').update(`${runId}:audit_passed:${Date.now()}`).digest('hex'),
+        changeSummary: { runCode: run.runCode, markedBy: session.userId },
+      });
+      return NextResponse.json({ data: { runId, runStatus: updated?.runStatus } });
+    }
+
     if (action === 'approve') {
       const run = await WorkspacePayrollRun.findById(runId).lean();
       if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 });

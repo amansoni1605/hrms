@@ -63,6 +63,7 @@ export async function GET(
       email:       null,
       phone:       null,
       bankAccount: null,
+      baseSalary:  null,
     };
 
     if (isSelf || FULL_DECRYPT_ROLES.has(session.role)) {
@@ -78,8 +79,16 @@ export async function GET(
     if ((isSelf || session.role === 'payroll_officer') && emp.bankAccountEnc) {
       try {
         const acct = await decryptField(tenantId, emp.bankAccountEnc);
-        // Obfuscate: only return last-4 characters even for payroll role
         reveal['bankAccount'] = `•••• ${acct.slice(-4)}`;
+      } catch { /* no-op */ }
+    }
+
+    const PAYROLL_ROLES = new Set(['super_admin', 'hr_admin', 'payroll_officer', 'finance_auditor']);
+    if (PAYROLL_ROLES.has(session.role) && (emp as unknown as Record<string, unknown>)['baseSalaryEnc']) {
+      try {
+        const { decryptNumber } = await import('@/infrastructure/multiTenantCore');
+        const salary = await decryptNumber(tenantId, (emp as unknown as Record<string, unknown>)['baseSalaryEnc'] as Buffer);
+        reveal['baseSalary'] = String(Math.round(salary));
       } catch { /* no-op */ }
     }
 

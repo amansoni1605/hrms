@@ -46,7 +46,7 @@ interface EmployeeDetail {
   identityVerification: { verificationStatus: string; livenessCheckPassed: boolean; failedAttempts: number; verifiedAt?: string };
   digitalWorkerMeta: { isDigitalWorker: boolean; agentFramework?: string; modelVersion?: string; tokenBudgetMonthly: number; tokenBudgetUsed: number; apiCostMtd: number; humanSupervisorId?: string };
   createdAt: string; updatedAt: string;
-  reveal: { fullName: string | null; email: string | null; phone: string | null; bankAccount: string | null };
+  reveal: { fullName: string | null; email: string | null; phone: string | null; bankAccount: string | null; baseSalary: string | null };
   immigrationAlerts: Array<{ documentType: string; hostCountry: string; expiresAt: string; daysUntilExpiry: number; nexusRiskLevel: string }>;
   hiddenTabs: string[];
 }
@@ -737,9 +737,16 @@ export default function EmployeeDetailPage() {
                       : <span style={{ fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{emp.salaryBand ?? '— Not set'}</span>}
                   </DetailRow>
                   <DetailRow label="Base Salary">
-                    <span style={{ color: 'var(--color-neutral-6)', fontSize: 11, fontFamily: 'var(--font-in-md)' }}>
-                      Encrypted · HR payroll access required to view
-                    </span>
+                    {emp.reveal.baseSalary != null ? (
+                      <span style={{ fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>
+                        {formatCurrency(Number(emp.reveal.baseSalary), emp.currencyCode)}
+                        <span style={{ fontSize: 10, color: 'var(--color-neutral-5)', marginLeft: 4, fontFamily: 'var(--font-in-md)', fontWeight: 400 }}>/ month</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--color-neutral-6)', fontSize: 11, fontFamily: 'var(--font-in-md)' }}>
+                        Encrypted · payroll access required
+                      </span>
+                    )}
                   </DetailRow>
                   {emp.reveal.bankAccount && (
                     <DetailRow label="Bank Account" mono>{emp.reveal.bankAccount}</DetailRow>
@@ -1213,17 +1220,15 @@ function EmployeePayslips({ employeeId, currencyCode }: { employeeId: string; cu
               <Badge variant={SLIP_STATUS_VARIANT[s.status] ?? 'neutral'}>
                 {s.status.replace(/_/g, ' ')}
               </Badge>
-              {(s.status === 'paid' || s.status === 'approved') && (
-                <a
-                  href={`/api/payroll/payslip?runId=${s._id}&employeeId=${employeeId}`}
-                  download={`payslip-${MONTH_SHORT[s.month - 1]}-${s.year}.pdf`}
-                  className="hrms-btn-ghost"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '0.25rem 0.6rem', fontSize: 11 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Receipt size={10} /> PDF
-                </a>
-              )}
+              <a
+                href={`/api/payroll/payslip?runId=${s._id}&employeeId=${employeeId}`}
+                download={`payslip-${MONTH_SHORT[s.month - 1]}-${s.year}.pdf`}
+                className="hrms-btn-ghost"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '0.25rem 0.6rem', fontSize: 11 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Receipt size={10} /> PDF
+              </a>
             </div>
           </div>
         );

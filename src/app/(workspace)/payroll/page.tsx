@@ -107,7 +107,7 @@ function RunDetailDrawer({
 
   useEffect(() => { load(); }, [load]);
 
-  const action = async (act: 'approve' | 'reverse') => {
+  const action = async (act: 'approve' | 'reverse' | 'mark_audit_passed') => {
     setActing(act);
     await fetch(`/api/payroll/${runId}`, {
       method:  'POST',
@@ -271,32 +271,41 @@ function RunDetailDrawer({
             )}
 
             {/* Actions */}
-            {(detail.runStatus === 'audit_passed' || detail.runStatus === 'approved' || detail.runStatus === 'paid') && (
-              <div style={{ display: 'flex', gap: '0.8rem', paddingTop: '0.4rem' }}>
-                {detail.runStatus === 'audit_passed' && (
-                  <button
-                    onClick={() => action('approve')}
-                    disabled={!!acting || detail.criticalFlagCount > 0}
-                    className="hrms-btn-primary"
-                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                  >
-                    {acting === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                    Approve Run
-                  </button>
-                )}
-                {(detail.runStatus === 'approved' || detail.runStatus === 'paid') && (
-                  <button
-                    onClick={() => action('reverse')}
-                    disabled={!!acting}
-                    className="hrms-btn-ghost"
-                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--color-semantics-red-6)' }}
-                  >
-                    {acting === 'reverse' ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                    Reverse Run
-                  </button>
-                )}
-              </div>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingTop: '0.4rem' }}>
+              {detail.runStatus === 'draft' && (
+                <button
+                  onClick={() => action('mark_audit_passed')}
+                  disabled={!!acting}
+                  className="hrms-btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  {acting === 'mark_audit_passed' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                  Mark Audit Passed
+                </button>
+              )}
+              {detail.runStatus === 'audit_passed' && (
+                <button
+                  onClick={() => action('approve')}
+                  disabled={!!acting || detail.criticalFlagCount > 0}
+                  className="hrms-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  {acting === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                  Approve Run
+                </button>
+              )}
+              {(detail.runStatus === 'approved' || detail.runStatus === 'paid') && (
+                <button
+                  onClick={() => action('reverse')}
+                  disabled={!!acting}
+                  className="hrms-btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--color-semantics-red-6)' }}
+                >
+                  {acting === 'reverse' ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                  Reverse Run
+                </button>
+              )}
+            </div>
 
             {detail.criticalFlagCount > 0 && detail.runStatus === 'audit_passed' && (
               <p style={{ fontSize: 11, color: 'var(--color-semantics-red-6)', textAlign: 'center', marginTop: -8 }}>
@@ -359,16 +368,14 @@ function MyPayslipsView() {
           <Badge variant={STATUS_VARIANT[s.status] ?? 'neutral'}>
             {s.status.replace(/_/g, ' ')}
           </Badge>
-          {(s.status === 'paid' || s.status === 'approved') && (
-            <a
-              href={`/api/payroll/payslip?runId=${s._id}`}
-              download={`payslip-${MONTHS[s.month]}-${s.year}.pdf`}
-              className="hrms-btn-ghost"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-fs-12)', padding: '0.4rem 0.8rem' }}
-            >
-              <Download size={12} /> PDF
-            </a>
-          )}
+          <a
+            href={`/api/payroll/payslip?runId=${s._id}`}
+            download={`payslip-${MONTHS[s.month]}-${s.year}.pdf`}
+            className="hrms-btn-ghost"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-fs-12)', padding: '0.4rem 0.8rem' }}
+          >
+            <Download size={12} /> PDF
+          </a>
         </div>
       ))}
     </div>

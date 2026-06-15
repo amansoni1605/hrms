@@ -171,11 +171,13 @@ const WUserSchema = new Schema(
     email:        { type: String, required: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     role:         { type: String, enum: ['super_admin','hr_admin','hr_manager','payroll_officer','finance_auditor','compliance_officer','employee','digital_worker','readonly'], default: 'employee' },
-    isActive:     { type: Boolean, default: true },
-    mfaEnabled:   { type: Boolean, default: false },
-    lastLoginAt:  { type: Date },
-    phone:        { type: String, trim: true },
-    designation:  { type: String, trim: true },
+    isActive:            { type: Boolean, default: true },
+    mfaEnabled:          { type: Boolean, default: false },
+    lastLoginAt:         { type: Date },
+    phone:               { type: String, trim: true },
+    designation:         { type: String, trim: true },
+    passwordResetToken:  { type: String },
+    passwordResetExpiry: { type: Date },
   },
   { timestamps: true, collection: 'ws_users' }
 );
@@ -195,6 +197,7 @@ export interface IWUser extends Document {
   name: string; email: string; passwordHash: string;
   role: UserRole; isActive: boolean; mfaEnabled: boolean; lastLoginAt?: Date;
   phone?: string; designation?: string;
+  passwordResetToken?: string; passwordResetExpiry?: Date;
 }
 export const WorkspaceUser: Model<IWUser> =
   (mongoose.models['WorkspaceUser'] as Model<IWUser>) ?? model<IWUser>('WorkspaceUser', WUserSchema);

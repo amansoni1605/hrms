@@ -14,6 +14,8 @@ export interface IUser extends Document {
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  passwordResetToken?: string;
+  passwordResetExpiry?: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -29,16 +31,20 @@ const UserSchema = new Schema<IUser>(
     },
     employeeId:  { type: Schema.Types.ObjectId, ref: 'Employee', default: null },
     tenantId:    { type: Schema.Types.ObjectId, ref: 'Tenant', default: null },
-    isActive:    { type: Boolean, default: true },
-    lastLoginAt: { type: Date },
+    isActive:            { type: Boolean, default: true },
+    lastLoginAt:         { type: Date },
+    passwordResetToken:  { type: String },
+    passwordResetExpiry: { type: Date },
   },
   { timestamps: true }
 );
 
 // Mongoose v9: save hooks use Promise — no next() needed
 UserSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
-  this.password = await bcrypt.hash(this.password, 12);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const doc = this as any;
+  if (!doc.isModified('password')) return;
+  doc.password = await bcrypt.hash(doc.password, 12);
 });
 
 UserSchema.methods.comparePassword = function (candidate: string) {

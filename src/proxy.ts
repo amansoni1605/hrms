@@ -5,7 +5,11 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret-change-in-production'
 );
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/seed'];
+const PUBLIC_PATHS = [
+  '/login', '/reset-password',
+  '/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password',
+  '/api/seed',
+];
 
 // Routes only hr_admin / super_admin / payroll / auditor / compliance can visit.
 // hr_manager is redirected away from these.

@@ -263,3 +263,27 @@ export async function sendInviteEmail(params: {
     layout(params.companyName, color, body),
   );
 }
+
+export async function sendPasswordResetEmail(params: {
+  to:          string;
+  name:        string;
+  resetUrl:    string;
+  companyName: string;
+  brandColor?: string;
+  expiresInMinutes?: number;
+}) {
+  const color   = params.brandColor ?? '#1C509D';
+  const expires = params.expiresInMinutes ?? 60;
+
+  const body = `
+    <h2 style="margin:0 0 8px;font-size:22px;color:#111827;">Reset your password</h2>
+    <p style="margin:0 0 20px;color:#374151;font-size:15px;">Hi ${params.name}, we received a request to reset the password for your ${params.companyName} account.</p>
+    <p style="margin:0 0 4px;color:#374151;font-size:14px;">Click the button below to choose a new password. This link expires in <strong>${expires} minutes</strong>.</p>
+    ${btn(params.resetUrl, 'Reset my password', color)}
+    <div style="margin-top:24px;padding:12px 16px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:12px;color:#6B7280;">
+      If you didn't request a password reset, you can safely ignore this email. Your password will not change.
+    </div>
+    <p style="margin:20px 0 0;font-size:12px;color:#9CA3AF;">Or copy this link into your browser:<br/><span style="color:${color};word-break:break-all;">${params.resetUrl}</span></p>`;
+
+  await dispatch(params.to, 'Reset your HRMS password', layout(params.companyName, color, body));
+}

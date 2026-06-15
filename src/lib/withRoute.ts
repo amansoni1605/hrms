@@ -76,13 +76,13 @@ export async function runWithSession(
     const store = buildStore(session);
     await connectDB();
 
-    return TenantContext.run(store, () => handler(session));
+    return await TenantContext.run(store, () => handler(session));
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Internal error';
+    const msg = err instanceof Error ? err.message : JSON.stringify(err) ?? 'Internal error';
     if (msg.startsWith('SESSION_NO_TENANT')) {
       return NextResponse.json({ error: 'No tenant context. Re-seed database and log in again.' }, { status: 403 });
     }
-    console.error('[withRoute]', err);
+    console.error('[withRoute]', err instanceof Error ? err.stack : err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

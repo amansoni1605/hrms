@@ -153,21 +153,21 @@ export async function PATCH(
 
       const { key }          = await getTenantDEK(ctx.tenantId.toString());
 
-      // Encrypt managerNotes
+      // Encrypt managerNotes — format: [IV(12) | AuthTag(16) | Ciphertext]
       const mnIv          = randomBytes(12);
       const mnCipher      = createCipheriv('aes-256-gcm', key, mnIv);
       const mnPlain       = cp.managerNotes ?? '';
       const mnEnc         = Buffer.concat([mnCipher.update(mnPlain, 'utf8'), mnCipher.final()]);
       const mnTag         = mnCipher.getAuthTag();
-      const managerNotesEnc = Buffer.concat([mnTag, mnEnc]);
+      const managerNotesEnc = Buffer.concat([mnIv, mnTag, mnEnc]);
 
-      // Encrypt hrNotes
+      // Encrypt hrNotes — format: [IV(12) | AuthTag(16) | Ciphertext]
       const hrIv          = randomBytes(12);
       const hrCipher      = createCipheriv('aes-256-gcm', key, hrIv);
       const hrPlain       = cp.hrNotes ?? '';
       const hrEnc         = Buffer.concat([hrCipher.update(hrPlain, 'utf8'), hrCipher.final()]);
       const hrTag         = hrCipher.getAuthTag();
-      const hrNotesEnc    = Buffer.concat([hrTag, hrEnc]);
+      const hrNotesEnc    = Buffer.concat([hrIv, hrTag, hrEnc]);
 
       pip.checkpoints.push({
         date:            new Date(cp.date),

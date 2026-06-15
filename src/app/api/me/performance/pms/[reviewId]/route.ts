@@ -34,7 +34,7 @@ async function decryptText(
   const data       = enc.subarray(16);
   const decipher   = createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(authTag);
-  return decipher.update(data) + decipher.final('utf8');
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -174,8 +174,16 @@ export async function PATCH(
     if (review.status === 'submitted') {
       return NextResponse.json({ error: 'This review has already been submitted' }, { status: 409 });
     }
+    if (review.status === 'recalled') {
+      return NextResponse.json({ error: 'This review has been recalled and can no longer be edited' }, { status: 409 });
+    }
 
-    const body = (await req.json()) as PatchBody;
+    let body: PatchBody;
+    try {
+      body = (await req.json()) as PatchBody;
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
     const isSubmit = body.submit === true;
 
     // On submit: verify cycle is still in self_appraisal phase
@@ -186,6 +194,18 @@ export async function PATCH(
           { error: 'The self-appraisal window for this cycle has closed' },
           { status: 409 },
         );
+      }
+    }
+
+    // ── Validate scores (server-side range check before encryption) ─────────
+    if (body.ratings !== undefined) {
+      for (const r of body.ratings) {
+        if (typeof r.score !== 'number' || r.score < 1 || r.score > 10) {
+          return NextResponse.json(
+            { error: `Score for "${r.dimension}" must be between 1 and 10` },
+            { status: 400 },
+          );
+        }
       }
     }
 
@@ -211,14 +231,17 @@ export async function PATCH(
     // ── Encrypt overall comment ──────────────────────────────────────────────
     let overallCommentEnc: Buffer | undefined;
     let overallCommentIv:  Buffer | undefined;
-    if (body.overallComment !== undefined && body.overallComment !== '') {
+    if (body.overallComment !== undefined && body.overallComment !== null && body.overallComment !== '') {
       const { enc, iv } = await encryptText(tenantId, body.overallComment);
       overallCommentEnc = enc;
       overallCommentIv  = iv;
     }
 
     // ── Apply updates ─────────────────────────────────────────────────────────
-    review.ratings = encryptedRatings as typeof review.ratings;
+    // Only replace ratings when the client actually sent them — prevent wipe on partial saves
+    if (body.ratings !== undefined) {
+      review.ratings = encryptedRatings as typeof review.ratings;
+    }
 
     if (overallCommentEnc !== undefined) {
       review.overallCommentEnc = overallCommentEnc;

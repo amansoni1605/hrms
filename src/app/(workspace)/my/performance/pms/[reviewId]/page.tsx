@@ -211,6 +211,14 @@ export default function PmsSelfAppraisalPage() {
 
   // ── Save (draft or submit) ────────────────────────────────────────────────
   const save = useCallback(async (submit: boolean) => {
+    if (submit) {
+      const unrated = COMPETENCIES.filter((c) => ratings[c.key].score < 1);
+      if (unrated.length > 0) {
+        pushToast({ kind: 'error', title: `Please rate all competencies before submitting. Missing: ${unrated.map((c) => c.label).join(', ')}.` });
+        return;
+      }
+    }
+
     const mode = submit ? 'submit' : 'draft';
     setSaving(mode);
     if (!submit) setSaveIndicator('saving');

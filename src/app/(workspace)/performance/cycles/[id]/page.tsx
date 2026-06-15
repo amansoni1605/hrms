@@ -301,28 +301,35 @@ function PhaseStepper({ phases, currentStatus }: { phases: CyclePhase[]; current
 function TransitionConfirmModal({
   open,
   currentStatus,
+  selectedTo,
+  onSelectTo,
   onConfirm,
   onCancel,
   loading,
 }: {
   open:          boolean;
   currentStatus: string;
+  selectedTo:    string | null;
+  onSelectTo:    (to: string) => void;
   onConfirm:     () => void;
   onCancel:      () => void;
   loading:       boolean;
 }) {
   if (!open) return null;
 
-  const nextStatus =
+  // manager_review is the only state with multiple valid next states
+  const isAmbiguous = currentStatus === 'manager_review';
+
+  const nextStatus = isAmbiguous ? selectedTo : (
     currentStatus === 'draft'           ? 'cycle_initiated' :
     currentStatus === 'cycle_initiated' ? 'self_appraisal'  :
     currentStatus === 'self_appraisal'  ? 'manager_review'  :
-    currentStatus === 'manager_review'  ? 'calibration'     :
     currentStatus === 'peer_360'        ? 'calibration'     :
     currentStatus === 'calibration'     ? 'approved_hr'     :
     currentStatus === 'approved_hr'     ? 'signed_off'      :
     currentStatus === 'signed_off'      ? 'archived'        :
-    null;
+    null
+  );
 
   return (
     <div
@@ -402,24 +409,59 @@ function TransitionConfirmModal({
           </button>
         </div>
 
-        <p
-          style={{
-            margin: 0,
-            fontSize: 'var(--text-fs-14)',
-            color: 'var(--color-neutral-8)',
-            lineHeight: 1.6,
-          }}
-        >
-          This will transition the cycle from{' '}
-          <strong style={{ color: 'var(--color-neutral-10)' }}>
-            {CYCLE_STATUS_LABEL[currentStatus] ?? currentStatus}
-          </strong>{' '}
-          to{' '}
-          <strong style={{ color: 'var(--color-vr-blue-6)' }}>
-            {nextStatus ? (CYCLE_STATUS_LABEL[nextStatus] ?? nextStatus) : 'the next phase'}
-          </strong>
-          . This action cannot be undone.
-        </p>
+        {isAmbiguous ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-8)', lineHeight: 1.6 }}>
+              Manager review is complete. Choose the next phase:
+            </p>
+            {(['peer_360', 'calibration'] as const).map((opt) => (
+              <label
+                key={opt}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '0.8rem 1rem',
+                  borderRadius: '0.6rem',
+                  border: `1px solid ${selectedTo === opt ? 'var(--color-vr-blue-6)' : 'var(--color-neutral-4)'}`,
+                  background: selectedTo === opt ? 'var(--color-vr-blue-1, #EFF6FF)' : 'var(--color-neutral-1)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="transitionTo"
+                  value={opt}
+                  checked={selectedTo === opt}
+                  onChange={() => onSelectTo(opt)}
+                  style={{ marginTop: 2, accentColor: 'var(--color-vr-blue-6)' }}
+                />
+                <div>
+                  <div style={{ fontFamily: 'var(--font-in-sb)', fontWeight: 600, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+                    {CYCLE_STATUS_LABEL[opt]}
+                  </div>
+                  <div style={{ fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-7)', marginTop: 2 }}>
+                    {opt === 'peer_360'
+                      ? 'Run 360° peer feedback before calibration.'
+                      : 'Skip peer feedback and go straight to calibration.'}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p
+            style={{ margin: 0, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-8)', lineHeight: 1.6 }}
+          >
+            This will transition the cycle from{' '}
+            <strong style={{ color: 'var(--color-neutral-10)' }}>
+              {CYCLE_STATUS_LABEL[currentStatus] ?? currentStatus}
+            </strong>{' '}
+            to{' '}
+            <strong style={{ color: 'var(--color-vr-blue-6)' }}>
+              {nextStatus ? (CYCLE_STATUS_LABEL[nextStatus] ?? nextStatus) : 'the next phase'}
+            </strong>
+            . This action cannot be undone.
+          </p>
+        )}
 
         <div
           style={{
@@ -449,7 +491,7 @@ function TransitionConfirmModal({
           <button
             className="hrms-btn-primary"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || (isAmbiguous && !selectedTo)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
             {loading ? (
@@ -486,6 +528,7 @@ export default function CycleDetailPage() {
 
   const [showTransitionModal, setShowTransitionModal] = useState(false);
   const [transitioning, setTransitioning]             = useState(false);
+  const [selectedTo, setSelectedTo]                   = useState<string | null>(null);
   const [computing, setComputing]                     = useState(false);
   const [bulkOpening, setBulkOpening]                 = useState(false);
 
@@ -527,10 +570,12 @@ export default function CycleDetailPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────────
 
-  const handleTransition = async () => {
+  const handleTransition = async (to?: string) => {
     setTransitioning(true);
     try {
-      const res  = await fetch(`/api/ws/performance/cycles/${id}/transition`, { method: 'POST' });
+      const body  = to ? JSON.stringify({ to }) : undefined;
+      const headers = to ? { 'Content-Type': 'application/json' } : undefined;
+      const res  = await fetch(`/api/ws/performance/cycles/${id}/transition`, { method: 'POST', body, headers });
       const json = await res.json();
       if (!res.ok) {
         pushToast({ kind: 'error', title: json.error ?? 'Failed to advance phase.' });
@@ -538,6 +583,7 @@ export default function CycleDetailPage() {
       }
       pushToast({ kind: 'success', title: 'Phase advanced successfully.' });
       setShowTransitionModal(false);
+      setSelectedTo(null);
       loadCycle();
       loadReviews();
     } catch {
@@ -574,7 +620,7 @@ export default function CycleDetailPage() {
         pushToast({ kind: 'error', title: json.error ?? 'Failed to compute scores.' });
         return;
       }
-      pushToast({ kind: 'success', title: 'Scores computed successfully.', desc: `${json.updated ?? 0} reviews updated.` });
+      pushToast({ kind: 'success', title: 'Scores computed successfully.', desc: `${json.computed ?? 0} reviews updated.` });
       loadReviews();
     } catch {
       pushToast({ kind: 'error', title: 'Network error — please try again.' });
@@ -754,7 +800,7 @@ export default function CycleDetailPage() {
             {canAdvance && (
               <button
                 className="hrms-btn-primary"
-                onClick={() => setShowTransitionModal(true)}
+                onClick={() => { setSelectedTo(null); setShowTransitionModal(true); }}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
                 <FastForward size={13} />
@@ -1020,8 +1066,10 @@ export default function CycleDetailPage() {
       <TransitionConfirmModal
         open={showTransitionModal}
         currentStatus={cycle.status}
-        onConfirm={handleTransition}
-        onCancel={() => setShowTransitionModal(false)}
+        selectedTo={selectedTo}
+        onSelectTo={setSelectedTo}
+        onConfirm={() => handleTransition(selectedTo ?? undefined)}
+        onCancel={() => { setShowTransitionModal(false); setSelectedTo(null); }}
         loading={transitioning}
       />
     </div>

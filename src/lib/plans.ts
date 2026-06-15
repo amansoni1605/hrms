@@ -11,13 +11,14 @@ export type FeatureKey = 'payroll' | 'performance' | 'analytics' | 'immigration'
 export type PlanTier   = 'starter' | 'growth' | 'enterprise' | 'global';
 
 export interface Plan {
-  tier:         PlanTier;
-  name:         string;
-  pricePerSeat: number;        // USD / seat / month (0 = free)
-  maxSeats:     number;        // -1 = unlimited
-  features:     FeatureKey[];  // modules unlocked (cumulative by tier)
-  tagline:      string;
-  highlights:   string[];      // human-readable bullet list for the pricing card
+  tier:            PlanTier;
+  name:            string;
+  pricePerSeat:    number;        // USD / seat / month (0 = free)
+  pricePerSeatINR: number;        // INR / seat / month (0 = free) — used for Razorpay
+  maxSeats:        number;        // -1 = unlimited
+  features:        FeatureKey[];  // modules unlocked (cumulative by tier)
+  tagline:         string;
+  highlights:      string[];      // human-readable bullet list for the pricing card
 }
 
 // Human labels for feature keys (used in pricing cards + upgrade prompts).
@@ -30,24 +31,24 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
 
 export const PLANS: Record<PlanTier, Plan> = {
   starter: {
-    tier: 'starter', name: 'Starter', pricePerSeat: 0, maxSeats: 25, features: [],
+    tier: 'starter', name: 'Starter', pricePerSeat: 0, pricePerSeatINR: 0, maxSeats: 25, features: [],
     tagline: 'Core HR for small teams getting started.',
     highlights: ['Employee directory', 'Leave management', 'Self-service profiles', 'Up to 25 seats'],
   },
   growth: {
-    tier: 'growth', name: 'Growth', pricePerSeat: 6, maxSeats: 200,
+    tier: 'growth', name: 'Growth', pricePerSeat: 6, pricePerSeatINR: 99, maxSeats: 200,
     features: ['payroll', 'performance'],
     tagline: 'Run payroll and performance reviews as you scale.',
     highlights: ['Everything in Starter', 'Payroll & payslips', 'Performance reviews (PMS)', 'Up to 200 seats'],
   },
   enterprise: {
-    tier: 'enterprise', name: 'Enterprise', pricePerSeat: 12, maxSeats: 2000,
+    tier: 'enterprise', name: 'Enterprise', pricePerSeat: 12, pricePerSeatINR: 199, maxSeats: 2000,
     features: ['payroll', 'performance', 'analytics', 'immigration'],
     tagline: 'Full workforce intelligence and compliance.',
     highlights: ['Everything in Growth', 'Workforce analytics & Burnout AI', 'Immigration & AI workers', 'Two-step comp approval', 'Up to 2,000 seats'],
   },
   global: {
-    tier: 'global', name: 'Global', pricePerSeat: 20, maxSeats: -1,
+    tier: 'global', name: 'Global', pricePerSeat: 20, pricePerSeatINR: 349, maxSeats: -1,
     features: ['payroll', 'performance', 'analytics', 'immigration'],
     tagline: 'Multi-entity scale with unlimited seats.',
     highlights: ['Everything in Enterprise', 'Unlimited seats', 'Priority support & SLAs', 'Multi-entity ready'],

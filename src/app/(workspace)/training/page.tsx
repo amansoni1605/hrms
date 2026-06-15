@@ -43,6 +43,7 @@ export default function TrainingPage() {
   const [showPathForm, setShowPathForm] = useState(false);
   const [pathForm, setPathForm] = useState({ name: '', description: '', targetRole: '', trackIds: [] as string[] });
   const [savingPath, setSavingPath] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const isHR = session && ['super_admin','hr_admin','hr_manager'].includes(session.role);
 
@@ -109,6 +110,23 @@ export default function TrainingPage() {
     loadPaths();
   };
 
+  const seedDefaults = async () => {
+    setSeeding(true);
+    const res  = await fetch('/api/training/defaults', { method: 'POST' });
+    const json = await res.json();
+    setSeeding(false);
+    if (res.ok) {
+      if (json.created === 0) {
+        toast.push({ kind: 'info', title: 'All default programs already exist' });
+      } else {
+        toast.push({ kind: 'success', title: `${json.created} default program${json.created > 1 ? 's' : ''} added`, desc: json.skipped > 0 ? `${json.skipped} already existed, skipped.` : undefined });
+        loadPrograms();
+      }
+    } else {
+      toast.push({ kind: 'error', title: json.error ?? 'Failed to seed defaults' });
+    }
+  };
+
   const enroll = async (id: string, action: 'enroll' | 'withdraw') => {
     setActing(id);
     await fetch(`/api/training/${id}`, {
@@ -141,9 +159,23 @@ export default function TrainingPage() {
           <p style={{ margin: 0, color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>{programs.length} programs · {paths.length} learning paths</p>
         </div>
         {isHR && tab === 'programs' && (
-          <button onClick={() => setShowForm((v) => !v)} className="hrms-btn-primary">
-            <Plus size={13} /> New Program
-          </button>
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            {programs.length === 0 && (
+              <button
+                onClick={seedDefaults}
+                disabled={seeding}
+                className="hrms-btn-ghost"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title="Add 12 standard training programs covering compliance, soft skills, and leadership"
+              >
+                {seeding ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
+                Seed Default Programs
+              </button>
+            )}
+            <button onClick={() => setShowForm((v) => !v)} className="hrms-btn-primary">
+              <Plus size={13} /> New Program
+            </button>
+          </div>
         )}
         {isHR && tab === 'paths' && (
           <button onClick={() => setShowPathForm((v) => !v)} className="hrms-btn-primary">
@@ -199,6 +231,25 @@ export default function TrainingPage() {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
               <Loader2 size={22} className="animate-spin" style={{ color: 'var(--color-vr-blue-6)' }} />
             </div>
+          ) : programs.length === 0 ? (
+            <div className="hrms-card" style={{ padding: '3rem', textAlign: 'center' }}>
+              <BookOpen size={36} style={{ color: 'var(--color-neutral-5)', marginBottom: '1rem' }} />
+              <p style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)', color: 'var(--color-neutral-10)' }}>No training programs yet</p>
+              <p style={{ margin: '0 0 1.6rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-13)' }}>
+                Get started with 12 pre-built programs covering compliance, soft skills, and leadership — or create your own.
+              </p>
+              {isHR && (
+                <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button onClick={seedDefaults} disabled={seeding} className="hrms-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {seeding ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
+                    Add 12 Default Programs
+                  </button>
+                  <button onClick={() => setShowForm(true)} className="hrms-btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Plus size={13} /> Create Custom Program
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1rem' }}>
               {programs.map((p) => {
@@ -206,17 +257,25 @@ export default function TrainingPage() {
                 const enrolled = isEnrolled(p);
                 const isFull   = p.enrollments.length >= p.maxEnrollment;
                 return (
-                  <div key={p._id} className="hrms-card" style={{ padding: '1.4rem' }}>
+                  <div key={p._id} className="hrms-card" style={{ padding: '1.4rem', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{ padding: '0.2rem 0.8rem', borderRadius: 99, background: s.bg, color: s.fg, fontSize: 11, fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{p.status.replace(/_/g, ' ')}</span>
                         {p.isMandatory && <span style={{ padding: '0.2rem 0.8rem', borderRadius: 99, background: 'var(--color-semantics-red-1)', color: 'var(--color-semantics-red-6)', fontSize: 11, fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>Mandatory</span>}
                       </div>
-                      <span style={{ fontSize: 11, color: 'var(--color-neutral-7)', textTransform: 'capitalize' }}>{p.category.replace(/_/g, ' ')}</span>
+                      <span style={{ fontSize: 11, color: 'var(--color-neutral-6)', textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: 8 }}>{p.category.replace(/_/g, ' ')}</span>
                     </div>
-                    <p style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>{p.title}</p>
-                    <p style={{ margin: '0 0 1rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>{p.trainer || 'Internal trainer'}</p>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-7)' }}>
+                    <p style={{ margin: '0 0 0.3rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>{p.title}</p>
+                    <p style={{ margin: '0 0 0.6rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>{p.trainer || 'Internal trainer'}</p>
+                    {(p as Program & { description?: string }).description && (
+                      <p style={{ margin: '0 0 0.8rem', color: 'var(--color-neutral-7)', fontSize: 11, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {(p as Program & { description?: string }).description}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-7)', marginTop: 'auto' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <BookOpen size={11} /> {p.durationHours}h
+                      </span>
                       {p.scheduledAt && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Calendar size={11} /> {new Date(p.scheduledAt).toLocaleDateString('en-IN')}
@@ -246,6 +305,7 @@ export default function TrainingPage() {
       )}
 
       {/* Learning Paths tab */}
+
       {tab === 'paths' && (
         <>
           {showPathForm && isHR && (

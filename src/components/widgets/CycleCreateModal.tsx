@@ -164,7 +164,7 @@ export function CycleCreateModal({ open, onClose, onCreated }: CycleCreateModalP
           components: [
             { source: 'self',    weight: formula.selfPct    / 100 },
             { source: 'manager', weight: formula.managerPct / 100 },
-            { source: 'peer',    weight: formula.peerPct    / 100 },
+            { source: 'peer_avg', weight: formula.peerPct    / 100 },
           ],
           scale: { min: 1, max: 5 },
         };

@@ -122,6 +122,15 @@ export const TENANT_SCOPED = new Set<string>([
   'ws_performance_reviews',
   'ws_compensation_history',
   'ws_goals',
+
+  // §16 Appraisal / PMS v2 collections
+  'ws_appraisal_cycles',
+  'ws_pms_reviews',
+  'ws_pips',
+  'ws_org_nodes',
+  'ws_peer_nominations',
+  'ws_feedback_events',
+  'ws_increment_matrices',
 ]);
 
 /** Device-trust levels that hard-block ALL write operations (ZT enforcement). */

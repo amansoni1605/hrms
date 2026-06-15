@@ -8,7 +8,7 @@ import {
   Mail, Phone, MapPin, Edit2, Save, X, Plus,
   Trash2, CheckCircle, AlertTriangle, Clock,
   UserCheck, FileText, Activity, ChevronDown,
-  SlidersHorizontal, Eye, EyeOff,
+  SlidersHorizontal, Eye, EyeOff, Receipt,
 } from 'lucide-react';
 import { Tabs }                      from '@/components/ui/Tabs';
 import { Badge, StatusBadge }        from '@/components/ui/Badge';
@@ -53,6 +53,13 @@ interface EmployeeDetail {
 
 interface LeaveRecord { _id: string; leaveType: string; startDate: string; endDate: string; totalDays: number; status: string; reason: string; approvedAt?: string }
 interface EmergencyContact { name: string; relationship: string; phone: string; email?: string }
+interface PayslipStub {
+  _id: string; runCode: string; month: number; year: number;
+  currencyCode: string; status: string; payDate: string | null;
+  baseSalary: number | null; grossSalary: number | null; netSalary: number | null;
+  attendanceDays: number | null; overtimeHours: number; leaveDaysDeducted: number;
+  varianceFlag: boolean;
+}
 
 const BASE_TABS = [
   { key: 'overview',    label: 'Overview',    icon: User },
@@ -67,11 +74,16 @@ const BASE_TABS = [
 ];
 
 // Access Control tab injected at position 2 for HR roles so it's always visible without scrolling
-const ACCESS_TAB = { key: 'access', label: 'Access Control', icon: SlidersHorizontal };
+const ACCESS_TAB    = { key: 'access',    label: 'Access Control', icon: SlidersHorizontal };
+const PAYSLIPS_TAB  = { key: 'payslips',  label: 'Payslips',       icon: Receipt };
 
 function buildTabs(isHR: boolean) {
   if (!isHR) return BASE_TABS;
-  return [BASE_TABS[0], ACCESS_TAB, ...BASE_TABS.slice(1)];
+  // Insert Payslips after Leaves
+  const base = [...BASE_TABS];
+  const leavesIdx = base.findIndex((t) => t.key === 'leaves');
+  base.splice(leavesIdx + 1, 0, PAYSLIPS_TAB);
+  return [base[0], ACCESS_TAB, ...base.slice(1)];
 }
 
 // All employee-role nav items that HR can individually hide
@@ -1003,6 +1015,11 @@ export default function EmployeeDetailPage() {
           </div>
         )}
 
+        {/* ── PAYSLIPS ────────────────────────────────────────────────── */}
+        {tab === 'payslips' && isHR && (
+          <EmployeePayslips employeeId={emp._id} currencyCode={emp.currencyCode} />
+        )}
+
         {/* ── ACTIVITY ────────────────────────────────────────────────── */}
         {tab === 'audit' && (
           <EmployeeAuditFeed employeeId={emp._id} />
@@ -1097,6 +1114,116 @@ export default function EmployeeDetailPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Audit feed for this employee
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payslips tab — HR/payroll-officer view with decrypted salary figures
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const SLIP_STATUS_VARIANT: Record<string, Parameters<typeof Badge>[0]['variant']> = {
+  paid:             'success',
+  approved:         'info',
+  processing:       'warning',
+  audit_passed:     'info',
+  audit_failed:     'danger',
+  reversed:         'danger',
+  draft:            'neutral',
+  cancelled:        'neutral',
+};
+
+function EmployeePayslips({ employeeId, currencyCode }: { employeeId: string; currencyCode: string }) {
+  const [slips,   setSlips]   = useState<PayslipStub[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err,     setErr]     = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/ws/employees/${employeeId}/payslips`)
+      .then((r) => r.json())
+      .then((d) => { if (d.error) setErr(d.error); else setSlips(d.data ?? []); })
+      .catch(() => setErr('Failed to load payslips'))
+      .finally(() => setLoading(false));
+  }, [employeeId]);
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+      <Loader2 size={18} className="animate-spin" style={{ color: 'var(--color-vr-blue-6)' }} />
+    </div>
+  );
+  if (err) return (
+    <div className="hrms-card" style={{ padding: '1.4rem', color: 'var(--color-semantics-red-6)', fontSize: 'var(--text-fs-12)' }}>
+      {err}
+    </div>
+  );
+  if (slips.length === 0) return (
+    <EmptyState icon={Receipt} title="No payslips yet"
+      message="Payslips appear here once payroll runs are processed and include this employee." />
+  );
+
+  const colGrid = '110px 1fr 1fr 1fr 80px 90px';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      {/* Column headers */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: colGrid, gap: '1rem',
+        padding: '0.5rem 1.4rem',
+      }}>
+        {['Period','Base Salary','Gross Pay','Net Pay','Days','Status'].map((h) => (
+          <span key={h} style={{ fontSize: 10, color: 'var(--color-neutral-6)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: h === 'Period' ? 'left' : 'right' }}>
+            {h}
+          </span>
+        ))}
+      </div>
+
+      {slips.map((s) => {
+        const cc = s.currencyCode || currencyCode;
+        const fmt = (n: number | null) => n != null ? formatCurrency(n, cc) : '—';
+        return (
+          <div key={s._id} className="hrms-card" style={{
+            display: 'grid', gridTemplateColumns: colGrid, gap: '1rem',
+            padding: '0.85rem 1.4rem', alignItems: 'center',
+            borderLeft: s.varianceFlag ? '3px solid var(--color-semantics-amber-6)' : undefined,
+          }}>
+            <div>
+              <p style={{ margin: 0, fontFamily: 'var(--font-in-sb)', fontWeight: 600, fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-10)' }}>
+                {MONTH_SHORT[s.month - 1]} {s.year}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: 'var(--color-neutral-5)', fontVariantNumeric: 'tabular-nums' }}>
+                {s.runCode}
+              </p>
+            </div>
+            <p style={{ margin: 0, textAlign: 'right', fontSize: 'var(--text-fs-12)', fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-7)' }}>
+              {fmt(s.baseSalary)}
+            </p>
+            <p style={{ margin: 0, textAlign: 'right', fontSize: 'var(--text-fs-12)', fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-8)' }}>
+              {fmt(s.grossSalary)}
+            </p>
+            <p style={{ margin: 0, textAlign: 'right', fontFamily: 'var(--font-in-sb)', fontWeight: 700, fontSize: 'var(--text-fs-12)', fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-10)' }}>
+              {fmt(s.netSalary)}
+            </p>
+            <div style={{ textAlign: 'right', fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-7)' }}>
+              {s.attendanceDays != null ? `${s.attendanceDays}d` : '—'}
+              {s.leaveDaysDeducted > 0 && (
+                <span style={{ display: 'block', fontSize: 10, color: 'var(--color-semantics-amber-6)' }}>
+                  -{s.leaveDaysDeducted} leave
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Badge variant={SLIP_STATUS_VARIANT[s.status] ?? 'neutral'}>
+                {s.status.replace(/_/g, ' ')}
+              </Badge>
+            </div>
+          </div>
+        );
+      })}
+
+      <p style={{ marginTop: '0.6rem', fontSize: 11, color: 'var(--color-neutral-5)', textAlign: 'center' }}>
+        Showing last {slips.length} payroll period{slips.length !== 1 ? 's' : ''} · Salary figures decrypted in-session, never stored in plain text
+      </p>
+    </div>
+  );
+}
 
 function EmployeeAuditFeed({ employeeId }: { employeeId: string }) {
   const [logs,    setLogs]    = useState<Array<{ _id: string; actionType: string; createdAt: string; changeSummary?: Record<string, unknown>; actorRole?: string }>>([]);

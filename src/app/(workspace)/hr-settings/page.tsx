@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Calendar, DollarSign, Clock, Gift, FileText, Settings2,
   Save, Loader2, Plus, Trash2, RefreshCw, CheckCircle,
-  AlertCircle,
+  AlertCircle, Palette, Upload, X,
 } from 'lucide-react';
 import { Tabs } from '@/components/ui/Tabs';
 import { useToast } from '@/components/ui/Toast';
@@ -41,6 +41,7 @@ const TABS = [
   { key: 'holidays',   label: 'Holidays',            icon: Gift },
   { key: 'expenses',   label: 'Expense Types',       icon: FileText },
   { key: 'offboarding',label: 'Offboarding',         icon: FileText },
+  { key: 'branding',   label: 'Login Branding',      icon: Palette },
 ];
 
 const HOLIDAY_TYPES = ['national','optional','restricted'];
@@ -57,6 +58,16 @@ export default function HRSettingsPage() {
   const [dirty,    setDirty]    = useState(false);
   const [tab,      setTab]      = useState('leave');
 
+  // Branding state (separate API)
+  const [branding,        setBranding]       = useState<{ loginBgData?: string | null; loginBgOverlay?: number; brandColor?: string; loginTagline?: string } | null>(null);
+  const [brandingColor,   setBrandingColor]  = useState('#1C509D');
+  const [brandingTagline, setBrandingTagline]= useState('');
+  const [brandingOverlay, setBrandingOverlay]= useState(0.45);
+  const [brandingBgData,  setBrandingBgData] = useState<string | null>(null);
+  const [bgUploading,     setBgUploading]    = useState(false);
+  const [bgRemoving,      setBgRemoving]     = useState(false);
+  const [brandingSaving,  setBrandingSaving] = useState(false);
+
   // Shift types state (separate API)
   const [shifts,     setShifts]      = useState<Array<{ _id: string; name: string; code: string; startTime: string; endTime: string; gracePeriodMinutes: number; isWfh: boolean }>>([]);
   const [shiftForm,  setShiftForm]   = useState({ name: '', code: '', startTime: '09:30', endTime: '18:30', gracePeriodMinutes: 15, isWfh: false });
@@ -65,13 +76,21 @@ export default function HRSettingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [settRes, shiftRes] = await Promise.all([
+    const [settRes, shiftRes, brandRes] = await Promise.all([
       fetch('/api/hr-settings'),
       fetch('/api/attendance/shifts'),
+      fetch('/api/ws/tenant/branding'),
     ]);
-    const [settJson, shiftJson] = await Promise.all([settRes.json(), shiftRes.json()]);
+    const [settJson, shiftJson, brandJson] = await Promise.all([settRes.json(), shiftRes.json(), brandRes.json()]);
     setSettings(settJson.data ?? null);
     setShifts(shiftJson.data ?? []);
+    if (brandJson.data) {
+      setBranding(brandJson.data);
+      setBrandingColor(brandJson.data.brandColor ?? '#1C509D');
+      setBrandingTagline(brandJson.data.loginTagline ?? '');
+      setBrandingOverlay(brandJson.data.loginBgOverlay ?? 0.45);
+      setBrandingBgData(brandJson.data.loginBgData ?? null);
+    }
     setLoading(false);
   }, []);
 
@@ -567,6 +586,226 @@ export default function HRSettingsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── BRANDING ─────────────────────────────────────────────── */}
+        {tab === 'branding' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem', maxWidth: 640 }}>
+
+            {/* Login background image */}
+            <div className="hrms-card" style={{ padding: '1.6rem' }}>
+              <h3 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+                Login Page Background
+              </h3>
+              <p style={{ margin: '0 0 1.2rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>
+                Upload a JPEG, PNG, or WebP image (max 1.5 MB). It replaces the default gradient on the login page left panel.
+              </p>
+
+              {/* Preview */}
+              {brandingBgData ? (
+                <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                  <img
+                    src={brandingBgData}
+                    alt="Login background preview"
+                    style={{
+                      width: '100%', height: 180, objectFit: 'cover',
+                      borderRadius: '0.8rem', border: '1px solid var(--color-neutral-4)',
+                      display: 'block',
+                    }}
+                  />
+                  <div style={{
+                    position: 'absolute', inset: 0, borderRadius: '0.8rem',
+                    background: `rgba(0,0,0,${brandingOverlay})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-fs-12)', fontFamily: 'var(--font-in-sb)' }}>
+                      Preview (with overlay)
+                    </span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Remove the login background image?')) return;
+                      setBgRemoving(true);
+                      try {
+                        await fetch('/api/ws/tenant/login-bg', { method: 'DELETE' });
+                        setBrandingBgData(null);
+                        toast.push({ kind: 'success', title: 'Background image removed.' });
+                      } catch {
+                        toast.push({ kind: 'error', title: 'Failed to remove image.' });
+                      } finally {
+                        setBgRemoving(false);
+                      }
+                    }}
+                    disabled={bgRemoving}
+                    style={{
+                      position: 'absolute', top: 8, right: 8,
+                      background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '0.5rem',
+                      color: '#fff', cursor: 'pointer', padding: '0.4rem 0.7rem',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      fontSize: 'var(--text-fs-12)', fontFamily: 'var(--font-in-sb)',
+                    }}
+                  >
+                    {bgRemoving ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  width: '100%', height: 140, borderRadius: '0.8rem', marginBottom: '1rem',
+                  border: '2px dashed var(--color-neutral-4)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  background: 'var(--color-neutral-3)',
+                }}>
+                  <span style={{ color: 'var(--color-neutral-6)', fontSize: 'var(--text-fs-12)' }}>No custom background — default gradient in use</span>
+                </div>
+              )}
+
+              {/* Upload button */}
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: bgUploading ? 'not-allowed' : 'pointer' }}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: 'none' }}
+                  disabled={bgUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setBgUploading(true);
+                    try {
+                      const fd = new FormData();
+                      fd.append('image', file);
+                      const res  = await fetch('/api/ws/tenant/login-bg', { method: 'POST', body: fd });
+                      const json = await res.json();
+                      if (!res.ok) { toast.push({ kind: 'error', title: json.error ?? 'Upload failed.' }); return; }
+                      setBrandingBgData(json.loginBgData);
+                      toast.push({ kind: 'success', title: 'Background image updated.' });
+                    } catch {
+                      toast.push({ kind: 'error', title: 'Upload failed. Please try again.' });
+                    } finally {
+                      setBgUploading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <span
+                  className="hrms-btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, pointerEvents: bgUploading ? 'none' : 'auto' }}
+                >
+                  {bgUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  {brandingBgData ? 'Replace image' : 'Upload image'}
+                </span>
+              </label>
+            </div>
+
+            {/* Overlay opacity */}
+            {brandingBgData && (
+              <div className="hrms-card" style={{ padding: '1.6rem' }}>
+                <h3 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+                  Overlay Darkness
+                </h3>
+                <p style={{ margin: '0 0 1rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>
+                  Controls how dark the overlay is over the background image. Increase if text is hard to read.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.9}
+                    step={0.05}
+                    value={brandingOverlay}
+                    onChange={(e) => setBrandingOverlay(Number(e.target.value))}
+                    style={{ flex: 1, accentColor: 'var(--color-vr-blue-6)' }}
+                  />
+                  <span style={{ width: 40, textAlign: 'right', fontFamily: 'var(--font-in-sb)', fontSize: 'var(--text-fs-12)', color: 'var(--color-neutral-10)' }}>
+                    {Math.round(brandingOverlay * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Tagline */}
+            <div className="hrms-card" style={{ padding: '1.6rem' }}>
+              <h3 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+                Login Page Tagline
+              </h3>
+              <p style={{ margin: '0 0 1rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>
+                Text shown on the left panel of the login page (max 120 characters).
+              </p>
+              <input
+                type="text"
+                value={brandingTagline}
+                maxLength={120}
+                placeholder="Your workforce, unified."
+                onChange={(e) => setBrandingTagline(e.target.value)}
+                className="hrms-input"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+              <p style={{ margin: '0.4rem 0 0', color: 'var(--color-neutral-6)', fontSize: 'var(--text-fs-12)' }}>
+                {brandingTagline.length}/120
+              </p>
+            </div>
+
+            {/* Brand color */}
+            <div className="hrms-card" style={{ padding: '1.6rem' }}>
+              <h3 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+                Brand Colour
+              </h3>
+              <p style={{ margin: '0 0 1rem', color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>
+                Used for buttons and accents across the platform.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <input
+                  type="color"
+                  value={brandingColor}
+                  onChange={(e) => setBrandingColor(e.target.value)}
+                  style={{ width: 48, height: 36, cursor: 'pointer', border: '1px solid var(--color-neutral-4)', borderRadius: '0.5rem', padding: 2 }}
+                />
+                <input
+                  type="text"
+                  value={brandingColor}
+                  maxLength={7}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setBrandingColor(v);
+                  }}
+                  className="hrms-input"
+                  style={{ width: 110 }}
+                />
+                <div style={{ width: 36, height: 36, borderRadius: '0.5rem', background: /^#[0-9A-Fa-f]{6}$/.test(brandingColor) ? brandingColor : '#1C509D' }} />
+              </div>
+            </div>
+
+            {/* Save branding */}
+            <button
+              onClick={async () => {
+                setBrandingSaving(true);
+                try {
+                  const res = await fetch('/api/ws/tenant/branding', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      brandColor:     brandingColor,
+                      loginTagline:   brandingTagline,
+                      loginBgOverlay: brandingOverlay,
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) { toast.push({ kind: 'error', title: json.error ?? 'Save failed.' }); return; }
+                  toast.push({ kind: 'success', title: 'Branding settings saved.' });
+                } catch {
+                  toast.push({ kind: 'error', title: 'Failed to save branding.' });
+                } finally {
+                  setBrandingSaving(false);
+                }
+              }}
+              disabled={brandingSaving}
+              className="hrms-btn-primary"
+              style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              {brandingSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+              {brandingSaving ? 'Saving…' : 'Save Branding'}
+            </button>
           </div>
         )}
 

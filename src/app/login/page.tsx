@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter }                from 'next/navigation';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useRouter }                           from 'next/navigation';
 import {
   Eye, EyeOff, Loader2, Lock, Mail, AlertCircle,
   Users, BarChart3, Shield, Zap, ArrowRight, ChevronLeft, CheckCircle2,
@@ -20,6 +20,15 @@ const FEATURES = [
   { icon: Zap,      text: 'Talent pipeline · Learning paths'    },
 ];
 
+interface Branding {
+  legalName?: string | null;
+  logoData?: string | null;
+  loginBgData?: string | null;
+  loginBgOverlay?: number;
+  brandColor?: string | null;
+  loginTagline?: string | null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email,      setEmail]     = useState('');
@@ -32,6 +41,14 @@ export default function LoginPage() {
   const [fpLoading,  setFpLoading] = useState(false);
   const [fpDone,     setFpDone]    = useState(false);
   const [fpError,    setFpError]   = useState('');
+  const [branding,   setBranding]  = useState<Branding | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/branding')
+      .then((r) => r.json())
+      .then((d) => { if (d.branding) setBranding(d.branding); })
+      .catch(() => { /* fail silently — use defaults */ });
+  }, []);
 
   const handleForgot = async (e: FormEvent) => {
     e.preventDefault();
@@ -81,38 +98,58 @@ export default function LoginPage() {
       <div style={{
         display: 'none',
         width: '46%', flexShrink: 0, position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(145deg, #0C1628 0%, #0F2C56 45%, #1C3A6E 70%, #2B1A4A 100%)',
+        background: branding?.loginBgData
+          ? 'transparent'
+          : 'linear-gradient(145deg, #0C1628 0%, #0F2C56 45%, #1C3A6E 70%, #2B1A4A 100%)',
       }}
         className="login-left-panel"
       >
-        {/* Decorative orbs */}
+        {/* Custom background image */}
+        {branding?.loginBgData && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `url(${branding.loginBgData})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }} />
+        )}
+
+        {/* Dark overlay — always present, opacity controlled by tenant */}
         <div style={{
-          position: 'absolute', top: -120, right: -120,
-          width: 400, height: 400, borderRadius: '50%',
-          background: 'radial-gradient(closest-side, rgba(120,52,137,0.35), transparent)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -80, left: -80,
-          width: 300, height: 300, borderRadius: '50%',
-          background: 'radial-gradient(closest-side, rgba(28,80,157,0.4), transparent)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', top: '40%', left: '60%',
-          width: 180, height: 180, borderRadius: '50%',
-          background: 'radial-gradient(closest-side, rgba(73,115,177,0.2), transparent)',
+          position: 'absolute', inset: 0,
+          background: `rgba(0,0,0,${branding?.loginBgData ? (branding.loginBgOverlay ?? 0.45) : 0})`,
           pointerEvents: 'none',
         }} />
 
-        {/* Grid overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.04, pointerEvents: 'none',
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px),' +
-            'linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-        }} />
+        {/* Default gradient orbs — only shown without custom image */}
+        {!branding?.loginBgData && (<>
+          <div style={{
+            position: 'absolute', top: -120, right: -120,
+            width: 400, height: 400, borderRadius: '50%',
+            background: 'radial-gradient(closest-side, rgba(120,52,137,0.35), transparent)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: -80, left: -80,
+            width: 300, height: 300, borderRadius: '50%',
+            background: 'radial-gradient(closest-side, rgba(28,80,157,0.4), transparent)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', top: '40%', left: '60%',
+            width: 180, height: 180, borderRadius: '50%',
+            background: 'radial-gradient(closest-side, rgba(73,115,177,0.2), transparent)',
+            pointerEvents: 'none',
+          }} />
+          {/* Grid overlay */}
+          <div style={{
+            position: 'absolute', inset: 0, opacity: 0.04, pointerEvents: 'none',
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px),' +
+              'linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }} />
+        </>)}
 
         {/* Content */}
         <div style={{
@@ -122,17 +159,21 @@ export default function LoginPage() {
         }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: '0.9rem',
-              background: 'linear-gradient(135deg, #1C509D, #783489)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(28,80,157,0.5)',
-            }}>
-              <span style={{ color: '#fff', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: '1.8rem' }}>H</span>
-            </div>
+            {branding?.logoData ? (
+              <img src={branding.logoData} alt="logo" style={{ height: 42, width: 42, objectFit: 'contain', borderRadius: '0.6rem' }} />
+            ) : (
+              <div style={{
+                width: 42, height: 42, borderRadius: '0.9rem',
+                background: 'linear-gradient(135deg, #1C509D, #783489)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 20px rgba(28,80,157,0.5)',
+              }}>
+                <span style={{ color: '#fff', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: '1.8rem' }}>H</span>
+              </div>
+            )}
             <div>
               <p style={{ margin: 0, color: '#fff', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: '1.8rem', lineHeight: 1 }}>
-                HRMS Pro
+                {branding?.legalName ?? 'HRMS Pro'}
               </p>
               <p style={{ margin: 0, marginTop: 3, color: 'rgba(255,255,255,0.45)', fontSize: '1.0rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 Enterprise Platform
@@ -162,7 +203,7 @@ export default function LoginPage() {
               margin: '1.2rem 0 0', color: 'rgba(255,255,255,0.55)',
               fontSize: '1.4rem', lineHeight: 1.7, maxWidth: 340,
             }}>
-              From hire to retire — recruitment, onboarding, payroll, and performance in one zero-trust platform.
+              {branding?.loginTagline ?? 'From hire to retire — recruitment, onboarding, payroll, and performance in one zero-trust platform.'}
             </p>
           </div>
 

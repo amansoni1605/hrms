@@ -114,9 +114,11 @@ const TenantSchema = new Schema(
     // ── Branding ────────────────────────────────────────────────────
     // logoData: base64 data-URL (data:image/png;base64,...) stored directly.
     // Kept on the tenant doc so it survives without external storage.
-    logoData:      { type: String },   // base64 data-URL, max ~200 KB after validation
-    brandColor:    { type: String, default: '#1C509D', match: /^#[0-9A-Fa-f]{6}$/ },
-    loginTagline:  { type: String, trim: true, maxlength: 120 },
+    logoData:       { type: String },   // base64 data-URL, max ~200 KB after validation
+    loginBgData:    { type: String },   // base64 data-URL for login page background, max ~1.5 MB
+    loginBgOverlay: { type: Number, default: 0.45, min: 0, max: 0.9 }, // dark overlay opacity
+    brandColor:     { type: String, default: '#1C509D', match: /^#[0-9A-Fa-f]{6}$/ },
+    loginTagline:   { type: String, trim: true, maxlength: 120 },
 
     // ── Company profile ─────────────────────────────────────────────
     displayName:   { type: String, trim: true },   // short name shown in UI ("Acme" vs legal "Acme Corp Pvt Ltd")
@@ -149,7 +151,8 @@ export interface ITenant extends Document {
   kmsConfig: { provider: string; masterKeyId: string; region?: string; wrappedDek?: Buffer; keyAltName?: string; rotationCycle?: number };
   subscription: { tier: string; maxSeats: number; usedSeats: number };
   ztPolicy?: { deviceComplianceRequired: boolean; heartbeatIntervalSeconds: number; autoRevokeOnNonCompliance: boolean };
-  logoData?: string; brandColor?: string; loginTagline?: string;
+  logoData?: string; loginBgData?: string; loginBgOverlay?: number;
+  brandColor?: string; loginTagline?: string;
   displayName?: string; industry?: string; companySize?: string;
   websiteUrl?: string; billingEmail?: string; phone?: string; foundedYear?: number;
   registeredAddress?: { street?: string; city?: string; state?: string; postalCode?: string; country?: string };

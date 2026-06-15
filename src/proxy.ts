@@ -8,6 +8,7 @@ const SECRET = new TextEncoder().encode(
 const PUBLIC_PATHS = [
   '/login', '/reset-password',
   '/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password',
+  '/api/public/',
   '/api/seed',
 ];
 

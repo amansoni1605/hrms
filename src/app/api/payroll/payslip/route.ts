@@ -4,9 +4,9 @@ import { WorkspacePayrollRun, WorkspaceEmployee, Tenant } from '@/models/workspa
 import { TenantContext, decryptNumber }       from '@/infrastructure/multiTenantCore';
 import mongoose                              from 'mongoose';
 
-// GET /api/payroll/payslip?runId=<id>
-// Generates a PDF payslip for the currently logged-in employee for a given payroll run.
-// HR roles can pass an optional &employeeId= to generate payslips for any employee.
+// GET /api/payroll/payslip?runId=<id>[&employeeId=<id>]
+// Returns a print-ready HTML payslip page.
+// HR roles can pass employeeId for any employee; employees get only their own.
 export async function GET(req: NextRequest) {
   return runWithSession(async (session) => {
     const { searchParams } = new URL(req.url);
@@ -21,10 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     const HR_ROLES = ['super_admin', 'hr_admin', 'payroll_officer', 'finance_auditor'];
-    const isHR = HR_ROLES.includes(session.role);
-
-    // Non-HR users can only download their own payslip
-    if (!isHR && targetEmpId !== session.employeeId) {
+    if (!HR_ROLES.includes(session.role) && targetEmpId !== session.employeeId) {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     }
 
@@ -38,9 +35,8 @@ export async function GET(req: NextRequest) {
     const line = (run as any).lineItems?.find(
       (l: { employeeId: mongoose.Types.ObjectId }) => l.employeeId.toString() === targetEmpId,
     );
-    if (!line) return NextResponse.json({ error: 'Employee not found in this payroll run' }, { status: 404 });
+    if (!line) return NextResponse.json({ error: 'Employee not in this payroll run' }, { status: 404 });
 
-    // Decrypt salary figures
     let baseSalary = 0, grossSalary = 0, netSalary = 0;
     try {
       if (line.baseSalaryEnc)  baseSalary  = await decryptNumber(tid, line.baseSalaryEnc);
@@ -51,165 +47,171 @@ export async function GET(req: NextRequest) {
     const deductions = grossSalary - netSalary;
     const cc         = line.currencyCode || run.currencyCode || 'INR';
 
-    const emp = await WorkspaceEmployee.findById(targetEmpId)
+    const emp    = await WorkspaceEmployee.findById(targetEmpId)
       .select('employeeCode jobTitle departmentName hireDate countryCode').lean();
-
     const tenant = await Tenant.findById(ctx.tenantId).select('name').lean();
 
-    const MONTHS = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
-    const period = `${MONTHS[run.payPeriodMonth]} ${run.payPeriodYear}`;
+    const MONTHS = ['','January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    const period  = `${MONTHS[run.payPeriodMonth]} ${run.payPeriodYear}`;
+    const company = (tenant as unknown as { name?: string })?.name ?? 'Company';
+    const empCode = emp?.employeeCode ?? targetEmpId;
+    const jobTitle = (emp as unknown as { jobTitle?: string })?.jobTitle ?? '—';
 
-    // ── Try pdfkit — gracefully degrade to JSON if not installed ─────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let PDFDocument: (new (opts: Record<string, unknown>) => any) | null = null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      PDFDocument = require('pdfkit');
-    } catch {
-      // pdfkit not installed — return JSON payslip data instead
-      return NextResponse.json({
-        data: {
-          company:   (tenant as unknown as { name?: string })?.name ?? 'Company',
-          employee:  emp?.employeeCode ?? targetEmpId,
-          jobTitle:  (emp as unknown as { jobTitle?: string })?.jobTitle ?? '—',
-          period,
-          runCode:   run.runCode,
-          currency:  cc,
-          baseSalary,
-          grossSalary,
-          deductions,
-          netSalary,
-        },
-        _note: 'Install pdfkit to get PDF download: npm install pdfkit @types/pdfkit',
-      });
-    }
+    const fmt = (n: number) =>
+      new Intl.NumberFormat('en-IN', { style: 'currency', currency: cc, maximumFractionDigits: 0 }).format(n);
 
-    // ── Generate PDF ──────────────────────────────────────────────────────────
-    // PDFDocument is non-null here: early return above handles the null case
-    const doc = new PDFDocument!({ size: 'A4', margin: 50 });
-    const chunks: Buffer[] = [];
-    doc.on('data', (c: Buffer) => chunks.push(c));
+    const hra       = Math.round(baseSalary * 0.40);
+    const transport = 1_600;
+    const medical   = 1_250;
+    const other     = Math.max(0, grossSalary - baseSalary - hra - transport - medical);
+    const pf        = Math.min(Math.round(baseSalary * 0.12), 1_800);
+    const pt        = 200;
+    const tds       = Math.max(0, deductions - pf - pt);
 
-    await new Promise<void>((resolve) => {
-      doc.on('end', resolve);
+    const earningRows: [string, number][] = [
+      ['Basic Salary', baseSalary],
+      ['HRA',          hra],
+      ['Transport Allowance', transport],
+      ['Medical Allowance',   medical],
+      ...(other > 0 ? [['Other Allowances', other] as [string, number]] : []),
+    ];
+    const deductionRows: [string, number][] = [
+      ['Provident Fund (Employee)',  pf],
+      ['Professional Tax',           pt],
+      ['Tax Deducted at Source',     tds],
+    ];
 
-      const companyName = (tenant as unknown as { name?: string })?.name ?? 'Company';
-      const empCode     = emp?.employeeCode ?? targetEmpId;
-      const jobTitle    = (emp as unknown as { jobTitle?: string })?.jobTitle ?? '—';
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Payslip — ${empCode} — ${period}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; background: #fff; }
 
-      const fmt = (n: number) =>
-        new Intl.NumberFormat('en-IN', { style: 'currency', currency: cc, maximumFractionDigits: 0 }).format(n);
+  .page { max-width: 800px; margin: 0 auto; padding: 32px; }
 
-      // Header band
-      doc.rect(0, 0, 595, 90).fill('#1C509D');
-      doc.fillColor('#ffffff')
-        .font('Helvetica-Bold').fontSize(18)
-        .text(companyName, 50, 28);
-      doc.font('Helvetica').fontSize(11)
-        .text('Pay Slip', 50, 52);
-      doc.text(`Period: ${period}`, 50, 68);
+  /* Print controls — hidden when printing */
+  .print-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 32px; background: #1e40af; color: #fff; position: sticky; top: 0;
+  }
+  .print-bar span { font-size: 13px; opacity: .85; }
+  .print-btn {
+    background: #fff; color: #1e40af; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 700; padding: 7px 18px; border-radius: 6px;
+  }
+  @media print { .print-bar { display: none; } body { font-size: 11px; } .page { padding: 20px; } }
 
-      // Run code (top-right)
-      doc.font('Helvetica').fontSize(9).fillColor('#CBD5E1')
-        .text(run.runCode, 370, 70, { align: 'right', width: 175 });
+  /* Header */
+  .header { background: #1e40af; color: #fff; padding: 24px 28px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: flex-end; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+  .header .sub { font-size: 12px; opacity: .75; margin-top: 4px; }
+  .header .run-code { font-size: 10px; opacity: .6; font-family: monospace; }
 
-      doc.fillColor('#000000');
+  /* Info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #e2e8f0; border-top: none; }
+  .info-cell { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; }
+  .info-cell:nth-child(odd) { border-right: 1px solid #e2e8f0; }
+  .info-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+  .info-value { font-size: 13px; font-weight: 600; color: #0f172a; margin-top: 2px; }
 
-      // Employee details section
-      const y0 = 115;
-      doc.font('Helvetica-Bold').fontSize(10).text('Employee Details', 50, y0);
-      doc.moveTo(50, y0 + 14).lineTo(545, y0 + 14).strokeColor('#E2E8F0').stroke();
+  /* Earnings / Deductions table */
+  .table-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #e2e8f0; border-top: none; }
+  .col { border-right: 1px solid #e2e8f0; }
+  .col:last-child { border-right: none; }
+  .col-head { background: #f8fafc; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #475569; border-bottom: 1px solid #e2e8f0; }
+  .row { display: flex; justify-content: space-between; padding: 7px 16px; border-bottom: 1px solid #f1f5f9; }
+  .row-label { color: #475569; }
+  .row-earn  { color: #0f172a; font-weight: 600; }
+  .row-deduct { color: #dc2626; font-weight: 600; }
 
-      const rows1 = [
-        ['Employee Code', empCode],
-        ['Designation',   jobTitle],
-        ['Pay Period',    period],
-        ['Currency',      cc],
-      ];
-      rows1.forEach(([label, value], i) => {
-        const ry = y0 + 24 + i * 20;
-        doc.font('Helvetica').fontSize(9).fillColor('#64748B').text(label, 50, ry);
-        doc.font('Helvetica').fontSize(9).fillColor('#0F172A').text(value, 220, ry);
-      });
+  /* Totals bar */
+  .totals { display: grid; grid-template-columns: 1fr 1fr; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none; }
+  .total-cell { padding: 10px 16px; }
+  .total-cell:first-child { border-right: 1px solid #e2e8f0; }
+  .total-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+  .total-value { font-size: 15px; font-weight: 700; margin-top: 3px; }
+  .total-earn   { color: #0f172a; }
+  .total-deduct { color: #dc2626; }
 
-      // Earnings / Deductions
-      const y1 = y0 + 120;
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#000000').text('Earnings', 50, y1);
-      doc.font('Helvetica-Bold').fontSize(10).text('Deductions', 300, y1);
-      doc.moveTo(50, y1 + 14).lineTo(545, y1 + 14).strokeColor('#E2E8F0').stroke();
+  /* Net pay */
+  .net-pay { background: #1e40af; color: #fff; padding: 18px 24px; border-radius: 0 0 8px 8px; display: flex; justify-content: space-between; align-items: center; }
+  .net-label { font-size: 11px; opacity: .75; letter-spacing: .06em; text-transform: uppercase; }
+  .net-amount { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
 
-      const hra      = Math.round(baseSalary * 0.40);
-      const transport= 1_600;
-      const medical  = 1_250;
-      const other    = grossSalary - baseSalary - hra - transport - medical;
-      const pf       = Math.min(Math.round(baseSalary * 0.12), 1_800);
-      const pt       = 200;
-      const tds      = deductions - pf - pt;
+  .footer { margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="print-bar">
+  <span>Payslip — ${empCode} — ${period}</span>
+  <button class="print-btn" onclick="window.print()">⬇ Download / Print PDF</button>
+</div>
+<div class="page">
 
-      const earnings: [string, number][] = [
-        ['Basic Salary', baseSalary],
-        ['HRA',          hra],
-        ['Transport',    transport],
-        ['Medical',      medical],
-        ['Other',        Math.max(0, other)],
-      ];
-      const deductionRows: [string, number][] = [
-        ['Provident Fund',  pf],
-        ['Professional Tax',pt],
-        ['TDS',             Math.max(0, tds)],
-      ];
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>${company}</h1>
+      <div class="sub">Pay Slip · ${period}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="sub" style="font-size:13px;font-weight:700;opacity:1">${empCode}</div>
+      <div class="run-code">${run.runCode}</div>
+    </div>
+  </div>
 
-      earnings.forEach(([label, amount], i) => {
-        const ry = y1 + 24 + i * 18;
-        doc.font('Helvetica').fontSize(9).fillColor('#334155').text(label, 50, ry);
-        doc.font('Helvetica').fontSize(9).fillColor('#0F172A').text(fmt(amount), 160, ry, { align: 'right', width: 80 });
-      });
-      deductionRows.forEach(([label, amount], i) => {
-        const ry = y1 + 24 + i * 18;
-        doc.font('Helvetica').fontSize(9).fillColor('#334155').text(label, 300, ry);
-        doc.font('Helvetica').fontSize(9).fillColor('#DC2626').text(fmt(amount), 410, ry, { align: 'right', width: 80 });
-      });
+  <!-- Employee info -->
+  <div class="info-grid">
+    <div class="info-cell"><div class="info-label">Designation</div><div class="info-value">${jobTitle}</div></div>
+    <div class="info-cell"><div class="info-label">Pay Period</div><div class="info-value">${period}</div></div>
+    <div class="info-cell"><div class="info-label">Employee Code</div><div class="info-value">${empCode}</div></div>
+    <div class="info-cell"><div class="info-label">Currency</div><div class="info-value">${cc}</div></div>
+  </div>
 
-      // Totals band
-      const y2 = y1 + 24 + Math.max(earnings.length, deductionRows.length) * 18 + 16;
-      doc.rect(50, y2, 495, 30).fill('#F1F5F9');
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#334155')
-        .text('Gross Earnings', 60, y2 + 9);
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#0F172A')
-        .text(fmt(grossSalary), 160, y2 + 9, { align: 'right', width: 80 });
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#334155')
-        .text('Total Deductions', 310, y2 + 9);
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#DC2626')
-        .text(fmt(deductions), 410, y2 + 9, { align: 'right', width: 80 });
+  <!-- Earnings + Deductions -->
+  <div class="table-wrap">
+    <div class="col">
+      <div class="col-head">Earnings</div>
+      ${earningRows.map(([l, a]) => `
+      <div class="row"><span class="row-label">${l}</span><span class="row-earn">${fmt(a)}</span></div>`).join('')}
+    </div>
+    <div class="col">
+      <div class="col-head">Deductions</div>
+      ${deductionRows.map(([l, a]) => `
+      <div class="row"><span class="row-label">${l}</span><span class="row-deduct">${fmt(a)}</span></div>`).join('')}
+    </div>
+  </div>
 
-      // Net pay highlight
-      const y3 = y2 + 46;
-      doc.rect(50, y3, 495, 44).fill('#1C509D');
-      doc.font('Helvetica').fontSize(10).fillColor('#BFDBFE')
-        .text('NET PAY', 60, y3 + 14);
-      doc.font('Helvetica-Bold').fontSize(16).fillColor('#ffffff')
-        .text(fmt(netSalary), 300, y3 + 10, { align: 'right', width: 235 });
+  <!-- Totals -->
+  <div class="totals">
+    <div class="total-cell"><div class="total-label">Gross Earnings</div><div class="total-value total-earn">${fmt(grossSalary)}</div></div>
+    <div class="total-cell"><div class="total-label">Total Deductions</div><div class="total-value total-deduct">${fmt(deductions)}</div></div>
+  </div>
 
-      // Footer
-      doc.font('Helvetica').fontSize(8).fillColor('#94A3B8')
-        .text(
-          `This is a computer-generated payslip. Generated on ${new Date().toLocaleDateString('en-IN')}. Run: ${run.runCode}`,
-          50, y3 + 65, { align: 'center', width: 495 },
-        );
+  <!-- Net Pay -->
+  <div class="net-pay">
+    <div class="net-label">Net Pay</div>
+    <div class="net-amount">${fmt(netSalary)}</div>
+  </div>
 
-      doc.end();
-    });
+  <div class="footer">
+    This is a computer-generated payslip and does not require a signature.<br/>
+    Generated on ${new Date().toLocaleDateString('en-IN')} &nbsp;·&nbsp; Run: ${run.runCode}
+  </div>
 
-    const pdfBuffer = Buffer.concat(chunks);
-    const filename  = `payslip-${emp?.employeeCode ?? targetEmpId}-${MONTHS[run.payPeriodMonth]}-${run.payPeriodYear}.pdf`;
+</div>
+</body>
+</html>`;
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(html, {
       status: 200,
       headers: {
-        'Content-Type':        'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length':      String(pdfBuffer.byteLength),
-        'Cache-Control':       'private, no-store',
+        'Content-Type':  'text/html; charset=utf-8',
+        'Cache-Control': 'private, no-store',
       },
     });
   });

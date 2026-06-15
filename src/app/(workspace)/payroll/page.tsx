@@ -370,7 +370,7 @@ function MyPayslipsView() {
           </Badge>
           <a
             href={`/api/payroll/payslip?runId=${s._id}`}
-            download={`payslip-${MONTHS[s.month]}-${s.year}.pdf`}
+            target="_blank" rel="noreferrer"
             className="hrms-btn-ghost"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-fs-12)', padding: '0.4rem 0.8rem' }}
           >

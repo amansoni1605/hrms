@@ -1222,7 +1222,7 @@ function EmployeePayslips({ employeeId, currencyCode }: { employeeId: string; cu
               </Badge>
               <a
                 href={`/api/payroll/payslip?runId=${s._id}&employeeId=${employeeId}`}
-                download={`payslip-${MONTH_SHORT[s.month - 1]}-${s.year}.pdf`}
+                target="_blank" rel="noreferrer"
                 className="hrms-btn-ghost"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '0.25rem 0.6rem', fontSize: 11 }}
                 onClick={(e) => e.stopPropagation()}

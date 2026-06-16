@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest) {
 
         const mandatoryPrograms = await WorkspaceTrainingProgram.find({
           isMandatory: true,
-          status: { $in: ['draft', 'scheduled'] },
+          status: { $in: ['draft', 'scheduled', 'in_progress'] },
         }).select('_id enrollments maxEnrollment');
 
         for (const prog of mandatoryPrograms) {

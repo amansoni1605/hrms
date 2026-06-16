@@ -50,10 +50,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        // Auto-enroll in all mandatory training programs (scheduled or draft)
+        // Auto-enroll in all mandatory training programs (exclude only cancelled)
         const mandatoryPrograms = await WorkspaceTrainingProgram.find({
           isMandatory: true,
-          status: { $in: ['draft', 'scheduled'] },
+          status: { $in: ['draft', 'scheduled', 'in_progress'] },
         }).select('_id enrollments maxEnrollment');
 
         for (const prog of mandatoryPrograms) {

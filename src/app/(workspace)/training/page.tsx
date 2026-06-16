@@ -59,6 +59,14 @@ export default function TrainingPage() {
     setPaths(json.data ?? []);
   }, []);
 
+  const catchUpEnrollment = useCallback(async (progs: Program[], empId: string) => {
+    const hasEnrollment = progs.some((p) => p.enrollments.some((e) => e.employeeId === empId));
+    if (!hasEnrollment) {
+      await fetch('/api/me/training/enroll-mandatory', { method: 'POST' });
+      await loadPrograms();
+    }
+  }, [loadPrograms]);
+
   const load = useCallback(async () => {
     setLoading(true);
     await Promise.all([loadPrograms(), loadPaths()]);
@@ -66,6 +74,14 @@ export default function TrainingPage() {
   }, [loadPrograms, loadPaths]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Catch-up: if employee has no enrollments (trigger fired before programs existed), auto-enroll
+  useEffect(() => {
+    if (!loading && session?.employeeId && !isHR) {
+      catchUpEnrollment(programs, session.employeeId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const create = async () => {
     if (!form.title.trim()) { toast.push({ kind: 'error', title: 'Title required' }); return; }

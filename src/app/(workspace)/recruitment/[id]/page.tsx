@@ -158,7 +158,7 @@ export default function RecruitmentDetailPage({ params }: { params: Promise<{ id
     setHiring(false);
     if (res.ok) {
       const j = await res.json();
-      toast.push({ kind: 'success', title: `${hireModal.name} hired! Code: ${j.data?.employeeCode}` });
+      toast.push({ kind: 'success', title: `${hireModal.name} hired! Code: ${j.data?.employeeCode}`, desc: `Temp password: ${j.data?.tempPassword} — share this with the employee.` });
       setHireModal(null);
       load();
     } else {

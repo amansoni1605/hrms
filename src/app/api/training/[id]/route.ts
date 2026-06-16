@@ -39,6 +39,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       program.enrollments = program.enrollments.filter(
         (e) => e.employeeId.toString() !== session.employeeId,
       );
+    } else if (body['action'] === 'attend' && session.employeeId) {
+      // Employee self-marks attendance / completion
+      const enrollment = program.enrollments.find(
+        (e) => e.employeeId.toString() === session.employeeId,
+      );
+      if (enrollment) {
+        enrollment.status     = 'completed';
+        enrollment.attendedAt = new Date();
+        enrollment.result     = 'pass';
+      }
     } else if (isHR) {
       if (body['status']) program.status = body['status'] as typeof program.status;
       if (body['scheduledAt']) program.scheduledAt = new Date(String(body['scheduledAt']));

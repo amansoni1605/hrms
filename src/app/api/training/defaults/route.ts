@@ -151,8 +151,9 @@ export const POST = withRoute(async () => {
   await (WorkspaceTrainingProgram as any).insertMany(
     toCreate.map((p) => ({
       ...p,
-      tenantId:   ctx.tenantId,
-      status:     'draft',
+      tenantId:    ctx.tenantId,
+      status:      'scheduled',   // immediately actionable; HR can move to in_progress/completed
+      scheduledAt: new Date(),    // defaults to today; HR can reschedule
       enrollments: [],
       createdById: ctx.userId,
     })),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Loader2, BookOpen, Users, Calendar, CheckCircle, Route, Trash2 } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Users, Calendar, CheckCircle, Route, Trash2, UserCheck, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useSession } from '@/hooks/useSession';
 
@@ -9,7 +9,7 @@ interface Program {
   _id: string; title: string; trainer: string; category: string;
   scheduledAt: string | null; durationHours: number; maxEnrollment: number;
   isMandatory: boolean; status: string;
-  enrollments: Array<{ employeeId: string; status: string }>;
+  enrollments: Array<{ employeeId: string; status: string; result?: string; attendedAt?: string | null }>;
   createdAt: string;
 }
 interface LearningPath {
@@ -31,7 +31,7 @@ const CATEGORIES = ['compliance','technical','leadership','soft_skills','other']
 export default function TrainingPage() {
   const { session } = useSession();
   const toast = useToast();
-  const [tab,       setTab]       = useState<'programs' | 'paths'>('programs');
+  const [tab,       setTab]       = useState<'my' | 'programs' | 'paths'>('my');
   const [programs,  setPrograms]  = useState<Program[]>([]);
   const [paths,     setPaths]     = useState<LearningPath[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -127,6 +127,18 @@ export default function TrainingPage() {
     }
   };
 
+  const attend = async (id: string) => {
+    setActing(id);
+    await fetch(`/api/training/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'attend' }),
+    });
+    setActing(null);
+    toast.push({ kind: 'success', title: 'Marked as completed' });
+    loadPrograms();
+  };
+
   const enroll = async (id: string, action: 'enroll' | 'withdraw') => {
     setActing(id);
     await fetch(`/api/training/${id}`, {
@@ -186,12 +198,96 @@ export default function TrainingPage() {
 
       {/* Tab switcher */}
       <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '1.6rem', borderBottom: '2px solid var(--color-stroke)', paddingBottom: 0 }}>
-        {([['programs', 'Programs', BookOpen], ['paths', 'Learning Paths', Route]] as const).map(([key, label, Icon]) => (
+        {([
+          ['my',       'My Training',    UserCheck],
+          ['programs', 'All Programs',   BookOpen],
+          ['paths',    'Learning Paths', Route],
+        ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.6rem 1.2rem', border: 'none', background: 'none', cursor: 'pointer', fontSize: 'var(--text-fs-13)', fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: tab === key ? 'var(--color-vr-blue-6)' : 'var(--color-neutral-7)', borderBottom: tab === key ? '2px solid var(--color-vr-blue-6)' : '2px solid transparent', marginBottom: -2, transition: 'color 150ms ease' }}>
             <Icon size={13} /> {label}
           </button>
         ))}
       </div>
+
+      {/* My Training tab */}
+      {tab === 'my' && (() => {
+        const myPrograms = programs.filter((p) => isEnrolled(p));
+        const myEnrollment = (p: Program) =>
+          p.enrollments.find((e) => e.employeeId === myEmpId);
+
+        const ENROLL_STATUS: Record<string, { bg: string; fg: string; label: string }> = {
+          enrolled:  { bg: '#E8EEF5', fg: 'var(--color-vr-blue-6)', label: 'Enrolled' },
+          completed: { bg: 'var(--color-semantics-green-1)', fg: 'var(--color-semantics-green-7)', label: 'Completed' },
+          absent:    { bg: 'var(--color-semantics-red-1)', fg: 'var(--color-semantics-red-6)', label: 'Absent' },
+          withdrawn: { bg: '#F5F5F5', fg: 'var(--color-neutral-7)', label: 'Withdrawn' },
+        };
+
+        return loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <Loader2 size={22} className="animate-spin" style={{ color: 'var(--color-vr-blue-6)' }} />
+          </div>
+        ) : myPrograms.length === 0 ? (
+          <div className="hrms-card" style={{ padding: '3rem', textAlign: 'center' }}>
+            <UserCheck size={36} style={{ color: 'var(--color-neutral-5)', marginBottom: '1rem' }} />
+            <p style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)', color: 'var(--color-neutral-10)' }}>No enrollments yet</p>
+            <p style={{ margin: 0, color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-13)' }}>
+              You will be automatically enrolled in mandatory programs when your onboarding is complete, or you can self-enroll from the All Programs tab.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            {myPrograms.map((p) => {
+              const enrollment = myEnrollment(p);
+              if (!enrollment) return null;
+              const es   = ENROLL_STATUS[enrollment.status] ?? ENROLL_STATUS['enrolled']!;
+              const done = enrollment.status === 'completed';
+              return (
+                <div key={p._id} className="hrms-card" style={{ padding: '1.2rem 1.4rem', display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
+                  {/* Status dot */}
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, background: done ? 'var(--color-semantics-green-7)' : 'var(--color-vr-blue-6)' }} />
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 0.2rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: 11, color: 'var(--color-neutral-7)', flexWrap: 'wrap' }}>
+                      <span>{p.category.replace(/_/g, ' ')}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={10} /> {p.durationHours}h</span>
+                      {p.trainer && <span>{p.trainer}</span>}
+                      {enrollment.attendedAt && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <CheckCircle size={10} /> Completed {new Date(enrollment.attendedAt).toLocaleDateString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Badges */}
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexShrink: 0 }}>
+                    {p.isMandatory && (
+                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: 99, background: 'var(--color-semantics-red-1)', color: 'var(--color-semantics-red-6)', fontSize: 10, fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>Mandatory</span>
+                    )}
+                    <span style={{ padding: '0.2rem 0.6rem', borderRadius: 99, background: es.bg, color: es.fg, fontSize: 10, fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{es.label}</span>
+                  </div>
+
+                  {/* Action */}
+                  {!done && (
+                    <button
+                      onClick={() => attend(p._id)}
+                      disabled={acting === p._id}
+                      className="hrms-btn-primary"
+                      style={{ flexShrink: 0, fontSize: 'var(--text-fs-12)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      {acting === p._id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                      Mark Complete
+                    </button>
+                  )}
+                  {done && <CheckCircle size={18} style={{ color: 'var(--color-semantics-green-7)', flexShrink: 0 }} />}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Programs tab */}
       {tab === 'programs' && (

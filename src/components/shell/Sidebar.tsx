@@ -37,6 +37,10 @@ const EMPLOYEE_NAV: NavGroup[] = [
     { label: 'My Equity',    href: '/my/equity',      icon: FileText },
     { label: 'Tax Studio',   href: '/my/tax',         icon: Activity },
   ]},
+  { heading: 'Growth', items: [
+    { label: 'My Onboarding', href: '/my/onboarding', icon: UserCheck },
+    { label: 'Training',      href: '/training',       icon: BookOpen },
+  ]},
 ];
 
 // Manager nav — own workspace + team management only; no org-wide HR sections

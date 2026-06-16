@@ -1,5 +1,6 @@
 import { NextResponse }                  from 'next/server';
 import { withFeature }                   from '@/lib/featureGate';
+import { HR_EXTENDED_ROLES }             from '@/lib/roles';
 import { WorkspaceEmployee, WorkspaceDepartment, WorkspaceLeaveRequest, WorkspacePayrollRun } from '@/models/workspace.models';
 
 export const GET = withFeature('analytics', async () => {
@@ -19,7 +20,10 @@ export const GET = withFeature('analytics', async () => {
     WorkspaceEmployee.countDocuments({ isActive: true, employeeStatus: 'on_leave' }),
     WorkspaceDepartment.countDocuments({ isActive: true }),
     WorkspaceLeaveRequest.countDocuments({ status: 'pending' }),
-    WorkspacePayrollRun.findOne().sort({ payPeriodYear: -1, payPeriodMonth: -1 }).lean(),
+    WorkspacePayrollRun.findOne({ status: 'completed' })
+      .sort({ payPeriodYear: -1, payPeriodMonth: -1 })
+      .select('totalGross employeeCount payPeriodYear payPeriodMonth')
+      .lean(),
 
     // Risk distribution buckets
     WorkspaceEmployee.aggregate([
@@ -45,19 +49,19 @@ export const GET = withFeature('analytics', async () => {
       { $match: { isActive: true } },
       {
         $group: {
-          _id:              '$departmentId',
-          department:       { $first: '$departmentName' },
-          headcount:        { $sum: 1 },
-          avgBurnoutRisk:   { $avg: '$burnoutRiskScore' },
-          avgFlightRisk:    { $avg: '$flightRiskScore' },
+          _id:            '$departmentId',
+          department:     { $first: '$departmentName' },
+          headcount:      { $sum: 1 },
+          avgBurnoutRisk: { $avg: '$burnoutRiskScore' },
+          avgFlightRisk:  { $avg: '$flightRiskScore' },
         },
       },
       {
         $project: {
           department:     1,
           headcount:      1,
-          avgBurnoutRisk: { $round: ['$avgBurnoutRisk', 3] },
-          avgFlightRisk:  { $round: ['$avgFlightRisk',  3] },
+          avgBurnoutRisk: { $ifNull: [{ $round: ['$avgBurnoutRisk', 3] }, 0] },
+          avgFlightRisk:  { $ifNull: [{ $round: ['$avgFlightRisk',  3] }, 0] },
         },
       },
       { $sort: { avgBurnoutRisk: -1 } },
@@ -84,6 +88,11 @@ export const GET = withFeature('analytics', async () => {
     riskMap[r._id] = r.count;
   }
 
+  // Use real payroll total if available; fall back to 0 (never fabricate salary data)
+  const payrollRun = latestPayroll as { totalGross?: number; employeeCount?: number } | null;
+  const latestPayrollTotal = payrollRun?.totalGross ?? 0;
+  const payrollIsEstimated = !payrollRun?.totalGross;
+
   return NextResponse.json({
     summary: {
       totalEmployees,
@@ -91,7 +100,8 @@ export const GET = withFeature('analytics', async () => {
       onLeave,
       departments,
       pendingLeaves,
-      latestPayrollTotal: latestPayroll?.employeeCount ? latestPayroll.employeeCount * 80_000 : 0,
+      latestPayrollTotal,
+      payrollIsEstimated,
     },
     riskDistribution: [
       { label: 'High Risk',   value: riskMap['high']   ?? 0, color: '#ef4444' },
@@ -107,4 +117,4 @@ export const GET = withFeature('analytics', async () => {
         rejected: l.rejected,
       })),
   });
-});
+}, HR_EXTENDED_ROLES);  // restrict: employees cannot see aggregate org data

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Plus, Loader2, LogOut, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Plus, Loader2, LogOut, CheckSquare, Square, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 interface FnF { pendingSalary: number; leaveEncashment: number; gratuity: number; advanceDeductions: number; totalPayable: number; status: string; }
@@ -27,9 +27,14 @@ export default function SeparationPage() {
   const [loading,  setLoading]  = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [saving,   setSaving]   = useState(false);
+  const [showForm,   setShowForm]   = useState(false);
+  const [saving,     setSaving]     = useState(false);
   const [form, setForm] = useState({ employeeId: '', type: 'resignation', noticeDate: new Date().toISOString().slice(0, 10), lastWorkingDay: '', notes: '' });
+  const [empSearch,  setEmpSearch]  = useState('');
+  const [empResults, setEmpResults] = useState<Array<{ _id: string; name: string; employeeCode: string; jobTitle: string }>>([]);
+  const [empLoading, setEmpLoading] = useState(false);
+  const [empLabel,   setEmpLabel]   = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,8 +46,30 @@ export default function SeparationPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const searchEmployees = (q: string) => {
+    setEmpSearch(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setEmpResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setEmpLoading(true);
+      const res  = await fetch(`/api/ws/employees?search=${encodeURIComponent(q)}&limit=8`);
+      const json = await res.json();
+      setEmpResults((json.data ?? []).map((e: { _id: string; employeeCode: string; jobTitle?: string; name?: string }) => ({
+        _id: e._id, employeeCode: e.employeeCode, jobTitle: e.jobTitle ?? '', name: e.name ?? e.employeeCode,
+      })));
+      setEmpLoading(false);
+    }, 300);
+  };
+
+  const selectEmployee = (emp: { _id: string; name: string; employeeCode: string; jobTitle: string }) => {
+    setForm((f) => ({ ...f, employeeId: emp._id }));
+    setEmpLabel(`${emp.name} (${emp.employeeCode})`);
+    setEmpSearch('');
+    setEmpResults([]);
+  };
+
   const create = async () => {
-    if (!form.employeeId || !form.lastWorkingDay) { toast.push({ kind: 'error', title: 'Employee ID and last working day required' }); return; }
+    if (!form.employeeId || !form.lastWorkingDay) { toast.push({ kind: 'error', title: 'Select an employee and last working day' }); return; }
     setSaving(true);
     const res = await fetch('/api/separation', {
       method: 'POST',
@@ -103,7 +130,40 @@ export default function SeparationPage() {
         <div className="hrms-card" style={{ padding: '1.6rem', marginBottom: '1.6rem' }}>
           <h3 style={{ margin: '0 0 1.2rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)', color: 'var(--color-neutral-10)' }}>Initiate Separation</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <SF label="Employee ID (MongoDB _id)"><input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="hrms-input" placeholder="Employee _id" /></SF>
+            <SF label="Employee">
+              <div style={{ position: 'relative' }}>
+                {form.employeeId ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.8rem', borderRadius: '0.6rem', border: '1.5px solid var(--color-vr-blue-6)', background: '#E8EEF5', fontSize: 'var(--text-fs-13)' }}>
+                    <span style={{ flex: 1, color: 'var(--color-neutral-10)', fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{empLabel}</span>
+                    <button type="button" onClick={() => { setForm((f) => ({ ...f, employeeId: '' })); setEmpLabel(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-neutral-6)', fontSize: 12 }}>✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-neutral-5)', pointerEvents: 'none' }} />
+                    <input
+                      value={empSearch}
+                      onChange={(e) => searchEmployees(e.target.value)}
+                      className="hrms-input"
+                      placeholder="Search by name or code…"
+                      style={{ paddingLeft: '2.2rem' }}
+                    />
+                    {empLoading && <Loader2 size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-neutral-5)' }} />}
+                    {empResults.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, background: '#fff', border: '1px solid var(--color-stroke)', borderRadius: '0.6rem', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', overflow: 'hidden', marginTop: 2 }}>
+                        {empResults.map((emp) => (
+                          <div key={emp._id} onClick={() => selectEmployee(emp)} style={{ padding: '0.6rem 0.9rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--color-stroke)' }}
+                               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-neutral-2)')}
+                               onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
+                            <span style={{ fontSize: 'var(--text-fs-13)', fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: 'var(--color-neutral-10)' }}>{emp.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--color-neutral-6)' }}>{emp.employeeCode} · {emp.jobTitle}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </SF>
             <SF label="Type">
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="hrms-input">
                 {SEP_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}

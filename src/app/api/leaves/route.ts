@@ -12,7 +12,7 @@ import mongoose                              from 'mongoose';
 //   Employees: see their own leaves only (enforced by employeeId filter).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const GET = withRoute(async (req) => {
+export const GET = withRoute(async (req, session) => {
   const { searchParams } = new URL(req.url);
   const page       = parseInt(searchParams.get('page')   ?? '1');
   const limit      = parseInt(searchParams.get('limit')  ?? '40');
@@ -21,9 +21,17 @@ export const GET = withRoute(async (req) => {
   const from       = searchParams.get('from')       ?? '';
   const to         = searchParams.get('to')         ?? '';
 
+  const isHR = ['super_admin','hr_admin','hr_manager','payroll_officer','finance_auditor'].includes(session.role);
+
   const query: Record<string, unknown> = {};
-  if (status)     query['status']     = status;
-  if (employeeId) query['employeeId'] = employeeId;
+  if (status) query['status'] = status;
+
+  // Employees see only their own leaves; HR can filter by any employeeId
+  if (!isHR) {
+    query['employeeId'] = session.employeeId;
+  } else if (employeeId) {
+    query['employeeId'] = employeeId;
+  }
 
   // Date-range filter: leaves that overlap the [from, to] window
   if (from || to) {

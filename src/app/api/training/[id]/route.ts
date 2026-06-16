@@ -3,6 +3,7 @@ import { runWithSession }             from '@/lib/withRoute';
 import {
   WorkspaceTrainingProgram,
   WorkspaceJobApplicant,
+  WorkspaceEmployee,
   WorkspaceUser,
 }                                     from '@/models/workspace.models';
 import mongoose                       from 'mongoose';
@@ -92,10 +93,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
 
       if (allDone) {
-        // Direct update via employeeId — covers any post-hire status
+        // Advance pipeline status
         await WorkspaceJobApplicant.findOneAndUpdate(
           { employeeId: empOid, candidateStatus: { $in: ['ONBOARDING_COMPLETED', 'TRAINING_IN_PROGRESS'] } },
           { $set: { candidateStatus: 'FULLY_RAMPED' } },
+        );
+        // Activate employee — move from pre_hire to active
+        await WorkspaceEmployee.findOneAndUpdate(
+          { _id: empOid, employeeStatus: 'pre_hire' },
+          { $set: { employeeStatus: 'active', activatedAt: new Date() } },
         );
       }
 

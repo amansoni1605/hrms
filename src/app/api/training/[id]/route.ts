@@ -92,10 +92,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
 
       if (allDone) {
-        // Direct update via employeeId — bypasses the onboarding→applicantId chain
+        // Direct update via employeeId — covers any post-hire status
         await WorkspaceJobApplicant.findOneAndUpdate(
-          { employeeId: empOid, candidateStatus: 'TRAINING_IN_PROGRESS' },
-          { $set: { candidateStatus: 'FULLY_RAMPED', updatedAt: new Date() } },
+          { employeeId: empOid, candidateStatus: { $in: ['ONBOARDING_COMPLETED', 'TRAINING_IN_PROGRESS'] } },
+          { $set: { candidateStatus: 'FULLY_RAMPED' } },
         );
       }
 

@@ -131,6 +131,9 @@ export const TENANT_SCOPED = new Set<string>([
   'ws_peer_nominations',
   'ws_feedback_events',
   'ws_increment_matrices',
+
+  // §12b Attendance regularization requests
+  'ws_attendance_regularizations',
 ]);
 
 /** Device-trust levels that hard-block ALL write operations (ZT enforcement). */

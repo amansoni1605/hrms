@@ -165,6 +165,35 @@ export async function POST(
       return NextResponse.json({ data: { runId, runStatus: updated?.runStatus } });
     }
 
-    return NextResponse.json({ error: 'action must be "approve" or "reverse"' }, { status: 400 });
+    if (action === 'mark_paid') {
+      const run = await WorkspacePayrollRun.findById(runId).lean();
+      if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+      if (run.runStatus !== 'approved') {
+        return NextResponse.json({
+          error: `Cannot mark paid: run is "${run.runStatus}", must be "approved".`,
+        }, { status: 409 });
+      }
+
+      const updated = await WorkspacePayrollRun.findByIdAndUpdate(
+        runId,
+        { $set: { runStatus: 'paid', payDate: new Date() } },
+        { new: true },
+      );
+
+      await auditEvent({
+        actionType:       'PAYROLL_MARKED_PAID',
+        targetCollection: 'ws_payroll_runs',
+        targetDocumentId: runId,
+        newStateHash:     createHash('sha256').update(`${runId}:paid:${Date.now()}`).digest('hex'),
+        changeSummary:    { runCode: run.runCode, markedBy: session.userId },
+      });
+
+      // TODO: initiate Razorpay Payouts disbursement per employee bank account
+      // await initiateRazorpayPayouts(run, session.userId);
+
+      return NextResponse.json({ data: { runId, runStatus: updated?.runStatus, payDate: updated?.payDate } });
+    }
+
+    return NextResponse.json({ error: 'action must be "approve", "reverse", "mark_audit_passed", or "mark_paid"' }, { status: 400 });
   }, ['super_admin', 'hr_admin', 'payroll_officer']);
 }

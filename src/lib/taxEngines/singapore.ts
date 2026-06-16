@@ -12,10 +12,9 @@ import type {
   TaxEngine,
   TaxComputeInput,
   TaxComputeBreakdown,
-  TaxBracket,
   TaxDeclarationField,
 } from './index';
-import { computeBracketTax } from './index';
+import { type TaxBracket, computeBracketTax } from './bracket';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Resident tax brackets — YA 2024

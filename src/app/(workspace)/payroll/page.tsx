@@ -8,7 +8,7 @@ import { formatCurrency }      from '@/lib/format';
 import {
   Play, Loader2, AlertTriangle, RefreshCw,
   ChevronRight, X, CheckCircle, RotateCcw,
-  DollarSign, Download, FileText,
+  DollarSign, Download, FileText, CreditCard,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function RunDetailDrawer({
 
   useEffect(() => { load(); }, [load]);
 
-  const action = async (act: 'approve' | 'reverse' | 'mark_audit_passed') => {
+  const action = async (act: 'approve' | 'reverse' | 'mark_audit_passed' | 'mark_paid') => {
     setActing(act);
     await fetch(`/api/payroll/${runId}`, {
       method:  'POST',
@@ -272,7 +272,7 @@ function RunDetailDrawer({
 
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingTop: '0.4rem' }}>
-              {detail.runStatus === 'draft' && (
+              {['draft','agentic_audit_queued','audit_failed'].includes(detail.runStatus) && (
                 <button
                   onClick={() => action('mark_audit_passed')}
                   disabled={!!acting}
@@ -294,6 +294,17 @@ function RunDetailDrawer({
                   Approve Run
                 </button>
               )}
+              {detail.runStatus === 'approved' && (
+                <button
+                  onClick={() => action('mark_paid')}
+                  disabled={!!acting}
+                  className="hrms-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--color-semantics-green-7)' }}
+                >
+                  {acting === 'mark_paid' ? <Loader2 size={12} className="animate-spin" /> : <DollarSign size={12} />}
+                  Mark Paid (Disburse)
+                </button>
+              )}
               {(detail.runStatus === 'approved' || detail.runStatus === 'paid') && (
                 <button
                   onClick={() => action('reverse')}
@@ -304,6 +315,17 @@ function RunDetailDrawer({
                   {acting === 'reverse' ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                   Reverse Run
                 </button>
+              )}
+              {/* Form 16 link — available for paid/approved runs */}
+              {['approved','paid'].includes(detail.runStatus) && (
+                <a
+                  href={`/api/payroll/form16?fyYear=${detail.payPeriodMonth >= 4 ? detail.payPeriodYear : detail.payPeriodYear - 1}`}
+                  target="_blank" rel="noreferrer"
+                  className="hrms-btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', fontSize: 'var(--text-fs-12)' }}
+                >
+                  <FileText size={12} /> Form 16 (FY {detail.payPeriodMonth >= 4 ? detail.payPeriodYear : detail.payPeriodYear - 1}–{String(detail.payPeriodMonth >= 4 ? detail.payPeriodYear + 1 : detail.payPeriodYear).slice(-2)})
+                </a>
               )}
             </div>
 
@@ -390,6 +412,7 @@ function PayrollConsole() {
   const [runs,      setRuns]      = useState<PayrollRun[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [running,   setRunning]   = useState(false);
+  const [seeding,   setSeeding]   = useState(false);
   const [activeRun, setActiveRun] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -416,6 +439,15 @@ function PayrollConsole() {
     if (json.data?.runId) setActiveRun(json.data.runId);
   };
 
+  const handleSeedBanks = async () => {
+    setSeeding(true);
+    const res  = await fetch('/api/ws/employees/backfill-banks', { method: 'POST' });
+    const json = await res.json();
+    setSeeding(false);
+    const d = json.data;
+    if (d) alert(`Bank accounts seeded: ${d.seeded} new, ${d.skipped} already had accounts.`);
+  };
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.4rem' }}>
@@ -429,6 +461,12 @@ function PayrollConsole() {
         </div>
         <button onClick={load} className="hrms-btn-ghost" style={{ padding: '0.8rem' }}>
           <RefreshCw size={13} />
+        </button>
+        <button onClick={handleSeedBanks} disabled={seeding} className="hrms-btn-ghost"
+          title="Seed dummy bank accounts for employees without bank details"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-fs-12)' }}>
+          {seeding ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
+          Seed Banks
         </button>
         <button onClick={handleRun} disabled={running} className="hrms-btn-primary"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

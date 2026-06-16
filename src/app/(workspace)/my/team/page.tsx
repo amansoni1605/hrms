@@ -226,6 +226,163 @@ const ACTION_HINT: Record<string, { label: string; color: string }> = {
   awaiting_employee_ack:    { label: 'Awaiting acknowledgement', color: 'var(--color-vr-blue-7)' },
 };
 
+// ── Attendance Regularization Approvals Card ─────────────────────────────────
+
+interface RegApprovalRow {
+  _id:               string;
+  employee:          { code: string; name: string; title: string };
+  date:              string;
+  requestedCheckIn:  string;
+  requestedCheckOut?: string;
+  reason:            string;
+}
+
+function AttendanceRegApprovalsCard() {
+  const toast    = useToast();
+  const [reqs,    setReqs]    = useState<RegApprovalRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [acting,  setActing]  = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const load = () => {
+    fetch('/api/me/team/attendance-regularizations')
+      .then((r) => r.json())
+      .then((d) => setReqs(d.data ?? []))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
+
+  const act = async (id: string, action: 'approve' | 'reject', reason?: string) => {
+    setActing(id);
+    const res = await fetch(`/api/attendance/regularize/${id}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ action, rejectionReason: reason }),
+    });
+    setActing(null);
+    const json = await res.json();
+    if (!res.ok) {
+      toast.push({ kind: 'error', title: json.error ?? 'Action failed' });
+    } else {
+      toast.push({ kind: 'success', title: action === 'approve' ? 'Attendance regularized' : 'Request rejected' });
+      setRejectTarget(null);
+      load();
+    }
+  };
+
+  if (!loading && reqs.length === 0) return null;
+
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <>
+      <div className="hrms-card" style={{ marginBottom: '1.4rem', overflow: 'hidden', border: '1px solid var(--color-semantics-amber-2)' }}>
+        <div style={{ padding: '1rem 1.6rem', borderBottom: '1px solid var(--color-semantics-amber-2)', background: '#FFFBF0', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <CalendarDays size={15} style={{ color: '#D98C00' }} />
+          <h3 className="hrms-section-label" style={{ margin: 0, color: '#7C5000' }}>
+            Attendance Regularization Pending Your Action
+          </h3>
+          {reqs.length > 0 && (
+            <span style={{ marginLeft: 'auto', padding: '0.2rem 0.8rem', borderRadius: 99, background: '#FFF6E6', border: '1px solid #FFD891', color: 'var(--color-semantics-orange-7)', fontSize: 'var(--text-fs-12)', fontFamily: 'var(--font-in-sb)', fontWeight: 700 }}>
+              {reqs.length} pending
+            </span>
+          )}
+        </div>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <Loader2 size={16} className="animate-spin" style={{ color: '#D98C00' }} />
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-fs-12)' }}>
+            <thead>
+              <tr>
+                {['Employee', 'Date', 'Req. In', 'Req. Out', 'Reason', 'Actions'].map((h) => (
+                  <th key={h} className="hrms-th">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {reqs.map((r) => (
+                <tr key={r._id} style={{ borderBottom: '1px solid var(--color-stroke)' }}>
+                  <td className="hrms-td">
+                    <p style={{ margin: 0, fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>{r.employee.name}</p>
+                    <p style={{ margin: 0, color: 'var(--color-neutral-6)', fontSize: 10 }}>{r.employee.code} · {r.employee.title}</p>
+                  </td>
+                  <td className="hrms-td" style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td className="hrms-td">{fmt(r.requestedCheckIn)}</td>
+                  <td className="hrms-td">{r.requestedCheckOut ? fmt(r.requestedCheckOut) : '—'}</td>
+                  <td className="hrms-td" style={{ maxWidth: 180 }}>
+                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160, color: 'var(--color-neutral-7)', fontSize: 11 }}>
+                      {r.reason}
+                    </span>
+                  </td>
+                  <td className="hrms-td">
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => act(r._id, 'approve')}
+                        disabled={acting === r._id}
+                        className="hrms-btn-ghost"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: 10, color: 'var(--color-semantics-green-7)', borderColor: 'var(--color-semantics-green-3)' }}
+                      >
+                        {acting === r._id ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => { setRejectTarget(r._id); setRejectReason(''); }}
+                        disabled={acting === r._id}
+                        className="hrms-btn-ghost"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: 10, color: 'var(--color-semantics-red-6)', borderColor: 'var(--color-semantics-red-2)' }}
+                      >
+                        <XCircle size={10} /> Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Rejection modal */}
+      {rejectTarget && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setRejectTarget(null)}>
+          <div style={{ background: 'var(--color-neutral-1)', borderRadius: 12, padding: '2rem', width: 400, boxShadow: 'var(--shadow-dialog)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.2rem' }}>
+              <X size={16} style={{ color: 'var(--color-semantics-red-6)' }} />
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-15)' }}>Reject Regularization</h3>
+            </div>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Reason for rejection (optional)…"
+              rows={3}
+              className="hrms-input"
+              style={{ width: '100%', marginBottom: '1rem', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setRejectTarget(null)} className="hrms-btn-ghost">Cancel</button>
+              <button
+                onClick={() => act(rejectTarget, 'reject', rejectReason || undefined)}
+                className="hrms-btn-primary"
+                style={{ background: 'var(--color-semantics-red-6)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <XCircle size={12} /> Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function UpcomingJoinersCard({ joiners }: { joiners: JoinerRow[] }) {
   if (joiners.length === 0) return null;
   const today = new Date();
@@ -407,6 +564,9 @@ export default function MyTeamPage() {
 
       {/* Leave approval queue for this manager */}
       <LeaveApprovalsCard />
+
+      {/* Attendance regularization queue for this manager */}
+      <AttendanceRegApprovalsCard />
 
       {/* Upcoming joiners */}
       <UpcomingJoinersCard joiners={data.upcomingJoiners ?? []} />

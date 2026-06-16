@@ -752,7 +752,8 @@ const PayrollLineItemS = new Schema({
   }],
   attendanceDays:   { type: Number },
   overtimeHours:    { type: Number, default: 0 },
-  leaveDaysDeducted:{ type: Number, default: 0 },
+  leaveDaysDeducted:{ type: Number, default: 0 },  // paid leave working-days
+  lwpDays:          { type: Number, default: 0 },   // Loss of Pay days (absent + unpaid leave)
   lineHash:         { type: String, maxlength: 64 },
   varianceFlag:     { type: Boolean, default: false },
   varianceNotes:    { type: String },
@@ -820,7 +821,7 @@ export interface IWPayroll extends Document {
   tenantId: Types.ObjectId; runCode: string; payPeriodMonth: number; payPeriodYear: number;
   currencyCode: string; runStatus: PayrollStatus; employeeCount: number;
   auditFlags: Array<{ severity: string; checkCode: string; isBlocking: boolean; resolvedAt?: Date }>;
-  criticalFlagCount: number; approvedById?: Types.ObjectId; approvedAt?: Date;
+  criticalFlagCount: number; approvedById?: Types.ObjectId; approvedAt?: Date; payDate?: Date;
 }
 export const WorkspacePayrollRun: Model<IWPayroll> =
   (mongoose.models['WorkspacePayrollRun'] as Model<IWPayroll>) ?? model<IWPayroll>('WorkspacePayrollRun', WPayrollSchema);
@@ -1399,6 +1400,48 @@ export interface IWAttendanceTS extends Document {
 export const WorkspaceAttendance: Model<IWAttendanceTS> =
   (mongoose.models['WorkspaceAttendance'] as Model<IWAttendanceTS>) ??
   model<IWAttendanceTS>('WorkspaceAttendance', WAttendanceTSSchema);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §12b  ATTENDANCE REGULARIZATION REQUEST
+//
+// Employees submit these when they need to correct a past day's attendance
+// (missed punch-in/out, WFH not captured, etc.).  On approval the handler
+// creates manual_adjust events in ws_attendance_timeseries.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const WAttendanceRegS = new Schema(
+  {
+    tenantId:              { type: Schema.Types.ObjectId, required: true, immutable: true },
+    employeeId:            { type: Schema.Types.ObjectId, required: true },
+    managerId:             { type: Schema.Types.ObjectId },          // line manager's employee OID
+    date:                  { type: Date, required: true },           // calendar day being corrected
+    requestedCheckIn:      { type: Date, required: true },
+    requestedCheckOut:     { type: Date },
+    reason:                { type: String, required: true, maxlength: 500, trim: true },
+    status:                { type: String, enum: ['pending','approved','rejected'], default: 'pending' },
+    managerApprovedById:   { type: Schema.Types.ObjectId },          // userId who approved (manager)
+    managerApprovedAt:     { type: Date },
+    rejectionReason:       { type: String, maxlength: 500 },
+    appliedAt:             { type: Date },                           // when manual_adjust events were written
+  },
+  { timestamps: true },
+);
+WAttendanceRegS.index({ tenantId: 1, employeeId: 1, date: 1 });
+WAttendanceRegS.index({ tenantId: 1, managerId: 1, status: 1, createdAt: -1 });
+WAttendanceRegS.index({ tenantId: 1, status: 1, createdAt: -1 });
+
+export interface IWAttendanceReg extends Document {
+  tenantId: Types.ObjectId; employeeId: Types.ObjectId; managerId?: Types.ObjectId;
+  date: Date; requestedCheckIn: Date; requestedCheckOut?: Date;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  managerApprovedById?: Types.ObjectId; managerApprovedAt?: Date;
+  rejectionReason?: string; appliedAt?: Date;
+  createdAt: Date; updatedAt: Date;
+}
+export const WorkspaceAttendanceReg: Model<IWAttendanceReg> =
+  (mongoose.models['WorkspaceAttendanceReg'] as Model<IWAttendanceReg>) ??
+  model<IWAttendanceReg>('WorkspaceAttendanceReg', WAttendanceRegS, 'ws_attendance_regularizations');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // §13  IN-APP NOTIFICATION  (tenant-scoped, per-user inbox)
@@ -2234,6 +2277,7 @@ export const WorkspaceModels = {
   HRSettings:        WorkspaceHRSettings,
   Onboarding:        WorkspaceOnboarding,
   LearningPath:      WorkspaceLearningPath,
+  AttendanceReg:     WorkspaceAttendanceReg,
 } as const;
 
 export default WorkspaceModels;

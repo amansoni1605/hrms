@@ -8,5 +8,13 @@ export async function register() {
     const { registerGlobalTenantPlugin } = await import('./infrastructure/multiTenantCore');
     registerGlobalTenantPlugin();
     console.info('[Instrumentation] ✓ Global tenant isolation plugin registered at startup.');
+
+    // Start the payroll audit worker — Redis required (graceful degradation if absent).
+    try {
+      const { startPayrollAuditWorker } = await import('./lib/queues/payrollAudit');
+      startPayrollAuditWorker();
+    } catch (e) {
+      console.warn('[Instrumentation] ⚠ Payroll audit worker not started (Redis unavailable?):', e);
+    }
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse }                  from 'next/server';
 import { withRoute }                     from '@/lib/withRoute';
 import { WorkspaceEmployee, WorkspaceLeaveRequest } from '@/models/workspace.models';
 import { decryptField, TenantContext }   from '@/infrastructure/multiTenantCore';
+import mongoose                          from 'mongoose';
 
 export const GET = withRoute(async (_req, session) => {
   if (!session.employeeId) {
@@ -14,7 +15,11 @@ export const GET = withRoute(async (_req, session) => {
   const [employee, leaveTrend] = await Promise.all([
     WorkspaceEmployee.findById(session.employeeId).lean(),
     WorkspaceLeaveRequest.aggregate([
-      { $match: { employeeId: ctx.employeeId ?? undefined, startDate: { $gte: new Date(new Date().getFullYear(), 0, 1) } } },
+      { $match: {
+          employeeId: new mongoose.Types.ObjectId(session.employeeId),
+          status:     'approved',
+          startDate:  { $gte: new Date(new Date().getFullYear(), 0, 1) },
+      } },
       { $group: { _id: '$leaveType', totalDays: { $sum: '$totalDays' }, count: { $sum: 1 } } },
     ]),
   ]);

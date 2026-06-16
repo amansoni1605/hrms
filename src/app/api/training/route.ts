@@ -5,16 +5,38 @@ import { TenantContext }              from '@/infrastructure/multiTenantCore';
 import mongoose                       from 'mongoose';
 
 // GET /api/training — list programs
-export const GET = withRoute(async (req) => {
+// ?status=  filter by program status
+// ?employeeId=  HR only: filter to programs where this employee has an enrollment
+export const GET = withRoute(async (req, session) => {
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status') ?? '';
+  const status     = searchParams.get('status') ?? '';
+  const employeeId = searchParams.get('employeeId') ?? '';
 
   const query: Record<string, unknown> = {};
   if (status) query['status'] = status;
 
+  const isHR = ['super_admin','hr_admin','hr_manager'].includes(session.role);
+
+  // HR querying a specific employee's programs
+  if (employeeId && isHR) {
+    query['enrollments.employeeId'] = new mongoose.Types.ObjectId(employeeId);
+  }
+
   const data = await WorkspaceTrainingProgram.find(query)
     .sort({ scheduledAt: -1 })
     .lean();
+
+  // If filtering by employee, attach only that employee's enrollment
+  if (employeeId && isHR) {
+    return NextResponse.json({
+      data: data.map((p) => ({
+        ...p,
+        myEnrollment: p.enrollments.find(
+          (e) => e.employeeId.toString() === employeeId,
+        ) ?? null,
+      })),
+    });
+  }
 
   return NextResponse.json({ data });
 });

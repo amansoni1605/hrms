@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse }  from 'next/server';
 import { runWithSession }             from '@/lib/withRoute';
-import { WorkspaceTrainingProgram }   from '@/models/workspace.models';
+import {
+  WorkspaceTrainingProgram,
+  WorkspaceOnboarding,
+  WorkspaceJobApplicant,
+}                                     from '@/models/workspace.models';
 import mongoose                       from 'mongoose';
 
 // GET /api/training/[id] — program details
@@ -13,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   });
 }
 
-// PATCH /api/training/[id] — update status, enroll/withdraw
+// PATCH /api/training/[id] — update status, enroll/withdraw/attend
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return runWithSession(async (session) => {
@@ -40,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         (e) => e.employeeId.toString() !== session.employeeId,
       );
     } else if (body['action'] === 'attend' && session.employeeId) {
-      // Employee self-marks attendance / completion
+      // Employee self-marks completion
       const enrollment = program.enrollments.find(
         (e) => e.employeeId.toString() === session.employeeId,
       );
@@ -49,6 +53,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         enrollment.attendedAt = new Date();
         enrollment.result     = 'pass';
       }
+      await program.save();
+
+      // Check if ALL mandatory programs for this employee are now complete
+      const empOid = new mongoose.Types.ObjectId(session.employeeId);
+      const allMandatory = await WorkspaceTrainingProgram.find({
+        isMandatory: true,
+        status: { $in: ['scheduled', 'in_progress', 'completed'] },
+      }).select('enrollments').lean();
+
+      const allDone = allMandatory.every((p) => {
+        const e = p.enrollments.find(
+          (en) => en.employeeId.toString() === session.employeeId,
+        );
+        return e?.status === 'completed';
+      });
+
+      if (allDone && allMandatory.length > 0) {
+        // Advance candidateStatus → FULLY_RAMPED via the onboarding → applicant chain
+        const onboarding = await WorkspaceOnboarding.findOne({ employeeId: empOid }).select('applicantId').lean();
+        if (onboarding?.applicantId) {
+          await WorkspaceJobApplicant.findByIdAndUpdate(onboarding.applicantId, {
+            $set: { candidateStatus: 'FULLY_RAMPED' },
+          });
+        }
+      }
+
+      return NextResponse.json({ data: program, fullyRamped: allDone });
     } else if (isHR) {
       if (body['status']) program.status = body['status'] as typeof program.status;
       if (body['scheduledAt']) program.scheduledAt = new Date(String(body['scheduledAt']));

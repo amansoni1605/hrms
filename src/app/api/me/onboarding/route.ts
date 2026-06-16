@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse }  from 'next/server';
 import { runWithSession }             from '@/lib/withRoute';
-import { WorkspaceOnboarding }        from '@/models/workspace.models';
+import {
+  WorkspaceOnboarding,
+  WorkspaceJobApplicant,
+  WorkspaceTrainingProgram,
+}                                     from '@/models/workspace.models';
 import mongoose                       from 'mongoose';
 
 // GET /api/me/onboarding — employee fetches their own onboarding record
@@ -46,6 +50,43 @@ export async function PATCH(req: NextRequest) {
       const anyDone = record.tasks.some((t)  => t.status === 'completed');
       record.status = allDone ? 'completed' : anyDone ? 'in_progress' : 'not_started';
       if (allDone) record.completedAt = new Date();
+
+      // Completion trigger — fires exactly once when all tasks finish
+      if (allDone && !record.completionTriggerFired) {
+        record.completionTriggerFired = true;
+
+        if (record.applicantId) {
+          await WorkspaceJobApplicant.findByIdAndUpdate(record.applicantId, {
+            $set: { candidateStatus: 'ONBOARDING_COMPLETED' },
+          });
+        }
+
+        const mandatoryPrograms = await WorkspaceTrainingProgram.find({
+          isMandatory: true,
+          status: { $in: ['draft', 'scheduled'] },
+        }).select('_id enrollments maxEnrollment');
+
+        for (const prog of mandatoryPrograms) {
+          const alreadyEnrolled = prog.enrollments.some(
+            (e) => e.employeeId.toString() === record.employeeId.toString(),
+          );
+          if (!alreadyEnrolled && prog.enrollments.length < prog.maxEnrollment) {
+            prog.enrollments.push({
+              employeeId: record.employeeId as mongoose.Types.ObjectId,
+              enrolledAt: new Date(),
+              status:     'enrolled',
+              result:     'na',
+            } as typeof prog.enrollments[0]);
+            await prog.save();
+          }
+        }
+
+        if (record.applicantId && mandatoryPrograms.length > 0) {
+          await WorkspaceJobApplicant.findByIdAndUpdate(record.applicantId, {
+            $set: { candidateStatus: 'TRAINING_IN_PROGRESS' },
+          });
+        }
+      }
     }
 
     await record.save();

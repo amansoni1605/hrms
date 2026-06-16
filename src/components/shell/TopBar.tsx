@@ -68,7 +68,7 @@ export function TopBar({ title, subtitle, role, userName }: TopBarProps) {
         </div>
 
         {/* Search */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <div className="ws-topbar-search" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
             <Search size={14} style={{
               position: 'absolute', left: 10, top: '50%',

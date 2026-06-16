@@ -2,6 +2,7 @@ import { redirect }                             from 'next/navigation';
 import { getSession }                           from '@/lib/auth';
 import { Sidebar }                              from '@/components/shell/Sidebar';
 import { TopBar }                               from '@/components/shell/TopBar';
+import { WorkspaceShell }                       from '@/components/shell/WorkspaceShell';
 import { PremiumGuard }                         from '@/components/shell/PremiumGuard';
 import { type UserRole }                        from '@/models/workspace.models';
 import { connectDB }                            from '@/lib/mongodb';
@@ -91,63 +92,40 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   };
 
   return (
-    <div
-      style={{
-        display:    'flex',
-        height:     '100vh',
-        background: 'var(--color-background)',
-        overflow:   'hidden',
-      }}
-    >
-      <Sidebar
-        role={role}
-        userName={userName}
-        userEmail={userEmail}
-        logoData={logoData}
-        brandColor={brandColor}
-        tenantName={tenantName}
-        hiddenTabs={hiddenTabs}
-      />
-
-      <div
-        style={{
-          flex:          1,
-          minWidth:      0,
-          display:       'flex',
-          flexDirection: 'column',
-          overflow:      'hidden',
-        }}
-      >
-        <TopBar
-          title={PAGE_TITLE[role] ?? 'Workspace'}
-          subtitle={new Date().toLocaleDateString('en-US', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-          })}
+    <WorkspaceShell
+      sidebar={
+        <Sidebar
           role={role}
           userName={userName}
+          userEmail={userEmail}
+          logoData={logoData}
+          brandColor={brandColor}
+          tenantName={tenantName}
+          hiddenTabs={hiddenTabs}
         />
-
-        {/*
-          <main> is the scroll root for all workspace pages.
-          overflow: auto  →  page content can be any height; browser scrolls it.
-          overflow-x: visible  →  notification drawer slides in from right without clip.
-          Full-height cockpits (HRCommandCenter, AdminControlRoom) manage their own
-          height via calc(100vh - 56px) so they don't need the <main> to be fixed.
-        */}
-        <main
-          id="workspace-main"
-          className="custom-scroll"
-          style={{
-            flex:       1,
-            minHeight:  0,
-            overflowY:  'auto',
-            overflowX:  'clip',            /* clip not hidden — allows position:fixed children */
-            background: 'var(--color-background)',
-          }}
-        >
-          <PremiumGuard>{children}</PremiumGuard>
-        </main>
-      </div>
-    </div>
+      }
+    >
+      <TopBar
+        title={PAGE_TITLE[role] ?? 'Workspace'}
+        subtitle={new Date().toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        })}
+        role={role}
+        userName={userName}
+      />
+      <main
+        id="workspace-main"
+        className="custom-scroll"
+        style={{
+          flex:       1,
+          minHeight:  0,
+          overflowY:  'auto',
+          overflowX:  'clip',
+          background: 'var(--color-background)',
+        }}
+      >
+        <PremiumGuard>{children}</PremiumGuard>
+      </main>
+    </WorkspaceShell>
   );
 }

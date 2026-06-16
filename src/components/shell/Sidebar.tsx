@@ -9,7 +9,7 @@ import {
   Shield, Settings, Building2, ChevronLeft, ChevronRight,
   Bot, Globe, Cpu, LogOut, Activity, FileText, Target, BadgeDollarSign, User, UsersRound,
   CreditCard, Lock, Flag, Clock, Receipt, Briefcase, BookOpen, UserCheck, UserMinus,
-  SlidersHorizontal, GitBranch,
+  SlidersHorizontal, GitBranch, Grid3x3, Zap,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { type FeatureKey } from '@/lib/plans';
@@ -81,6 +81,7 @@ const HR_NAV: NavGroup[] = [
     { label: 'Expenses',      href: '/expenses',    icon: Receipt },
     { label: 'Payroll',       href: '/payroll',     icon: DollarSign, feature: 'payroll' },
     { label: 'Performance',   href: '/performance',          icon: Target, feature: 'performance' },
+    { label: 'PMS Engine',    href: '/performance/pms',      icon: Grid3x3, feature: 'performance' },
     { label: 'Comp Approvals',href: '/performance/approvals',icon: BadgeDollarSign, feature: 'performance' },
     { label: 'Analytics',     href: '/analytics',            icon: BarChart3, feature: 'analytics' },
     { label: 'Burnout AI',    href: '/burnout',              icon: Activity, feature: 'analytics' },
@@ -102,6 +103,9 @@ const HR_NAV: NavGroup[] = [
     { label: 'Billing & Plans', href: '/billing',     icon: CreditCard, adminOnly: true },
     { label: 'Settings',        href: '/settings',    icon: Settings },
   ]},
+  { heading: 'Developer', items: [
+    { label: 'HRMS Simulator',  href: '/simulator',   icon: Zap },
+  ]},
 ];
 
 const ADMIN_NAV: NavGroup[] = [
@@ -115,7 +119,8 @@ const ADMIN_NAV: NavGroup[] = [
     { label: 'Attendance',    href: '/attendance',   icon: Clock },
     { label: 'Expenses',      href: '/expenses',     icon: Receipt },
     { label: 'Payroll',       href: '/payroll',      icon: DollarSign, feature: 'payroll' },
-    { label: 'Performance',   href: '/performance',  icon: Target, feature: 'performance' },
+    { label: 'Performance',   href: '/performance',     icon: Target,         feature: 'performance' },
+    { label: 'PMS Engine',    href: '/performance/pms', icon: Grid3x3,        feature: 'performance' },
     { label: 'Comp Approvals',href: '/performance/approvals', icon: BadgeDollarSign, feature: 'performance' },
     { label: 'Analytics',     href: '/analytics',    icon: BarChart3, feature: 'analytics' },
   ]},
@@ -134,6 +139,9 @@ const ADMIN_NAV: NavGroup[] = [
     { label: 'HR Settings',     href: '/hr-settings', icon: SlidersHorizontal },
     { label: 'Billing & Plans', href: '/billing',     icon: CreditCard },
     { label: 'App Settings',    href: '/settings',    icon: Settings },
+  ]},
+  { heading: 'Developer', items: [
+    { label: 'HRMS Simulator',  href: '/simulator',   icon: Zap },
   ]},
 ];
 
@@ -193,12 +201,13 @@ export function Sidebar({ role, userName, userEmail, logoData, brandColor, tenan
     <aside
       style={{
         width:        W,
-        minHeight:    '100vh',
+        height:       '100%',
         background:   'var(--color-neutral-1)',
         borderRight:  '1px solid var(--color-stroke)',
         flexShrink:   0,
         display:      'flex',
         flexDirection:'column',
+        overflow:     'hidden',
         transition:   'width 180ms ease',
       }}
     >
@@ -260,7 +269,7 @@ export function Sidebar({ role, userName, userEmail, logoData, brandColor, tenan
       {/* ── Navigation ────────────────────────────────────────────── */}
       <nav
         className="custom-scroll"
-        style={{ flex: 1, overflowY: 'auto', padding: '1.2rem 0.8rem' }}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '1.2rem 0.8rem' }}
       >
         {navGroups.map((group) => (
           <div key={group.heading} style={{ marginBottom: '1.6rem' }}>

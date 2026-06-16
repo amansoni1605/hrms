@@ -380,3 +380,308 @@
 .hrms-risk-bar__fill--low    { background: var(--color-semantics-green-6); }
 .hrms-risk-bar__fill--medium { background: var(--color-semantics-orange-6); }
 .hrms-risk-bar__fill--high   { background: var(--color-semantics-red-6); }
+
+/* ─── Workspace Shell — responsive layout ──────────────────────────────────── */
+
+.ws-root {
+  display: flex;
+  height: 100vh;
+  background: var(--color-background);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sidebar drawer wrapper — desktop: static column, mobile: fixed slide-in */
+.ws-drawer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  position: relative;
+  z-index: 40;
+}
+
+.ws-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Overlay — hidden on desktop */
+.ws-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 39;
+}
+
+/* Hamburger — hidden on desktop */
+.ws-hamburger {
+  display: none;
+}
+
+/* TopBar search: shrinks on mid-width */
+.ws-topbar-search { transition: max-width 200ms ease; }
+
+/* ── Mobile breakpoint: < 768px ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Drawer becomes fixed overlay */
+  .ws-drawer {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+  .ws-drawer--open {
+    transform: translateX(0);
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.25);
+  }
+
+
+  /* Overlay active */
+  .ws-overlay--open { display: block; }
+
+  /* Hamburger visible */
+  .ws-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 13px;
+    left: 12px;
+    z-index: 60;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--color-neutral-1);
+    border: 1px solid var(--color-stroke);
+    cursor: pointer;
+    color: var(--color-neutral-8);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Push TopBar title right so it doesn't sit under hamburger */
+  header { padding-left: 52px !important; }
+
+  /* Hide subtitle and search on very small screens to save space */
+  .ws-topbar-search { display: none !important; }
+}
+
+/* ── Small-tablet: 768px–1024px — full layout but tighter ──────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .ws-topbar-search { max-width: 220px; }
+}
+
+/* ─── Simulator: animations ─────────────────────────────────────────────── */
+
+@keyframes radarSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes pingRing {
+  0%   { transform: scale(1); opacity: .8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes blinkDot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .2; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes simGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(59,130,246,.2); }
+  50%       { box-shadow: 0 0 22px rgba(59,130,246,.45); }
+}
+
+/* ─── Simulator: premium slider ─────────────────────────────────────────── */
+
+.prem-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.prem-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.15), 0 0 12px rgba(59,130,246,.35);
+  cursor: pointer;
+  transition: box-shadow 150ms, transform 150ms;
+}
+.prem-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 5px rgba(59,130,246,.25), 0 0 20px rgba(59,130,246,.5);
+  transform: scale(1.15);
+}
+.prem-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+
+/* ─── Simulator: layout base ────────────────────────────────────────────── */
+/*
+ * Cockpit layout: sim-root fills the exact space left by the TopBar (56px).
+ * Each column manages its own overflow so neither depends on page-level scroll.
+ * The critical chain: sim-root (fixed height) → sim-sidebar (100% h, flex col)
+ *   → sim-sidebar-items (flex:1 + min-height:0 → overflow-y works)
+ *   → sim-main (flex:1, overflow-y:auto scrolls independently)
+ */
+
+.sim-root {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 56px);   /* 56px = TopBar */
+  overflow: hidden;
+}
+
+.sim-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* min-height:0 is the key — without it a flex child never shrinks below
+   its content size, so overflow-y:auto never activates. */
+.sim-sidebar-items {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.sim-sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: none;
+  border-left: 2px solid transparent; /* active indicator on desktop */
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  flex-shrink: 0;
+  transition: background 150ms, border-color 150ms;
+}
+/* Desktop active: coloured left stripe */
+.sim-sidebar-btn--active {
+  border-left-color: var(--emp-color, #3b82f6);
+}
+.sim-sidebar-btn-label      { display: block; }
+.sim-sidebar-section-label  { flex-shrink: 0; }
+.sim-sidebar-footer         { flex-shrink: 0; padding: 16px 16px 0; }
+.sim-sidebar-tagline        { flex-shrink: 0; padding: 10px 16px 4px; }
+
+/* Main content column: scrolls independently from sidebar */
+.sim-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sim-header     { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.sim-badges     { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.sim-grid       { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.sim-bezel-wrap { display: flex; justify-content: center; align-items: flex-start; }
+.sim-bezel      { width: 340px; flex-shrink: 0; }
+.sim-bezel-inner { height: 660px; }
+.emp-card-hover  { transition: background 180ms, border-color 180ms, transform 200ms; }
+.emp-card-hover:hover { transform: translateX(3px); }
+
+/* ─── Simulator: responsive breakpoints ─────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .sim-grid { grid-template-columns: 1fr !important; }
+}
+
+/*
+ * ≤ 900px: switch to a stacked layout.
+ * The cockpit fixed-height is released — page scrolls naturally on mobile.
+ * Sidebar becomes a horizontal avatar strip pinned at the top.
+ */
+@media (max-width: 900px) {
+  .sim-root {
+    flex-direction: column !important;
+    height: auto !important;       /* release fixed-height so page scrolls */
+    overflow: visible !important;
+  }
+
+  .sim-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    flex-direction: row !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sim-sidebar-items {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    min-height: unset !important;
+    flex: 1;
+    padding: 6px 8px;
+    scrollbar-width: none;
+    align-items: center;
+    gap: 4px;
+  }
+  .sim-sidebar-items::-webkit-scrollbar { display: none; }
+
+  .sim-sidebar-btn {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center;
+    padding: 8px 10px !important;
+    width: auto !important;
+    min-width: 56px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    gap: 4px;
+  }
+
+  .sim-sidebar-btn-label      { display: none !important; }
+  .sim-sidebar-section-label  { display: none !important; }
+  .sim-sidebar-footer         { flex-shrink: 0; padding: 6px 8px !important; border-top: none !important; }
+  .sim-sidebar-tagline        { display: none !important; }
+
+  /* Mobile active: coloured bottom border instead of left */
+  .sim-sidebar-btn--active {
+    border-left-color: transparent !important;
+    border-bottom: 2px solid var(--emp-color, #3b82f6) !important;
+  }
+
+  .sim-main {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    padding: 14px !important;
+    min-height: unset !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sim-bezel       { width: min(300px, 92vw) !important; }
+  .sim-bezel-inner { height: 580px !important; }
+  .sim-main        { padding: 10px !important; }
+}

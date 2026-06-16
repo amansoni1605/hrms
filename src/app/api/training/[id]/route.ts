@@ -2,17 +2,40 @@ import { NextRequest, NextResponse }  from 'next/server';
 import { runWithSession }             from '@/lib/withRoute';
 import {
   WorkspaceTrainingProgram,
-  WorkspaceOnboarding,
   WorkspaceJobApplicant,
+  WorkspaceUser,
 }                                     from '@/models/workspace.models';
 import mongoose                       from 'mongoose';
 
-// GET /api/training/[id] — program details
+// GET /api/training/[id] — program detail; HR gets enrolled employee names
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return runWithSession(async () => {
+  return runWithSession(async (session) => {
     const program = await WorkspaceTrainingProgram.findById(id).lean();
     if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const isHR = ['super_admin','hr_admin','hr_manager'].includes(session.role);
+
+    if (isHR && program.enrollments.length > 0) {
+      const empIds = program.enrollments.map((e) => e.employeeId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const users = await (WorkspaceUser as any).find(
+        { employeeId: { $in: empIds } },
+      ).select('employeeId name email').lean() as Array<{ employeeId: mongoose.Types.ObjectId; name: string; email: string }>;
+
+      const nameMap = new Map(users.map((u) => [u.employeeId.toString(), { name: u.name, email: u.email }]));
+
+      return NextResponse.json({
+        data: {
+          ...program,
+          enrollments: program.enrollments.map((e) => ({
+            ...e,
+            ...(nameMap.get(e.employeeId.toString()) ?? {}),
+          })),
+        },
+      });
+    }
+
     return NextResponse.json({ data: program });
   });
 }
@@ -44,7 +67,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         (e) => e.employeeId.toString() !== session.employeeId,
       );
     } else if (body['action'] === 'attend' && session.employeeId) {
-      // Employee self-marks completion
       const enrollment = program.enrollments.find(
         (e) => e.employeeId.toString() === session.employeeId,
       );
@@ -55,28 +77,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
       await program.save();
 
-      // Check if ALL mandatory programs for this employee are now complete
       const empOid = new mongoose.Types.ObjectId(session.employeeId);
-      const allMandatory = await WorkspaceTrainingProgram.find({
+
+      // Only check mandatory programs this employee is actually enrolled in
+      // (avoids false negatives from programs in draft or programs they weren't enrolled in)
+      const enrolledMandatory = await WorkspaceTrainingProgram.find({
         isMandatory: true,
-        status: { $in: ['scheduled', 'in_progress', 'completed'] },
+        'enrollments.employeeId': empOid,
       }).select('enrollments').lean();
 
-      const allDone = allMandatory.every((p) => {
-        const e = p.enrollments.find(
-          (en) => en.employeeId.toString() === session.employeeId,
-        );
+      const allDone = enrolledMandatory.length > 0 && enrolledMandatory.every((p) => {
+        const e = p.enrollments.find((en) => en.employeeId.toString() === session.employeeId);
         return e?.status === 'completed';
       });
 
-      if (allDone && allMandatory.length > 0) {
-        // Advance candidateStatus → FULLY_RAMPED via the onboarding → applicant chain
-        const onboarding = await WorkspaceOnboarding.findOne({ employeeId: empOid }).select('applicantId').lean();
-        if (onboarding?.applicantId) {
-          await WorkspaceJobApplicant.findByIdAndUpdate(onboarding.applicantId, {
-            $set: { candidateStatus: 'FULLY_RAMPED' },
-          });
-        }
+      if (allDone) {
+        // Direct update via employeeId — bypasses the onboarding→applicantId chain
+        await WorkspaceJobApplicant.findOneAndUpdate(
+          { employeeId: empOid, candidateStatus: 'TRAINING_IN_PROGRESS' },
+          { $set: { candidateStatus: 'FULLY_RAMPED', updatedAt: new Date() } },
+        );
       }
 
       return NextResponse.json({ data: program, fullyRamped: allDone });

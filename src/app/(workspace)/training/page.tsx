@@ -45,6 +45,10 @@ export default function TrainingPage() {
   const [savingPath, setSavingPath] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  // HR: expandable enrollment detail per program
+  const [expandedProg,  setExpandedProg]  = useState<string | null>(null);
+  const [progDetail,    setProgDetail]    = useState<Record<string, Array<{ employeeId: string; name?: string; email?: string; status: string; result: string; attendedAt?: string }>>>({});
+
   const isHR = session && ['super_admin','hr_admin','hr_manager'].includes(session.role);
 
   const loadPrograms = useCallback(async () => {
@@ -58,6 +62,21 @@ export default function TrainingPage() {
     const json = await res.json();
     setPaths(json.data ?? []);
   }, []);
+
+  const loadProgDetail = useCallback(async (progId: string) => {
+    if (progDetail[progId]) return; // already loaded
+    const res  = await fetch(`/api/training/${progId}`);
+    const json = await res.json();
+    setProgDetail((prev) => ({ ...prev, [progId]: json.data?.enrollments ?? [] }));
+  }, [progDetail]);
+
+  const toggleProgDetail = useCallback((progId: string) => {
+    setExpandedProg((prev) => {
+      const next = prev === progId ? null : progId;
+      if (next) loadProgDetail(next);
+      return next;
+    });
+  }, [loadProgDetail]);
 
   const catchUpEnrollment = useCallback(async (progs: Program[], empId: string) => {
     const hasEnrollment = progs.some((p) => p.enrollments.some((e) => e.employeeId === empId));
@@ -407,6 +426,56 @@ export default function TrainingPage() {
                           {acting === p._id ? <Loader2 size={11} className="animate-spin" /> : <BookOpen size={11} />} {isFull ? 'Full' : 'Enroll'}
                         </button>
                       )
+                    )}
+                    {/* HR: show/hide per-employee enrollment breakdown */}
+                    {isHR && p.enrollments.length > 0 && (
+                      <button
+                        onClick={() => toggleProgDetail(p._id)}
+                        className="hrms-btn-ghost"
+                        style={{ width: '100%', fontSize: 11, marginTop: 4 }}
+                      >
+                        <Users size={10} /> {expandedProg === p._id ? 'Hide' : 'View'} Enrollments ({p.enrollments.length})
+                      </button>
+                    )}
+                    {isHR && expandedProg === p._id && (
+                      <div style={{ marginTop: '0.8rem', borderTop: '1px solid var(--color-stroke)', paddingTop: '0.8rem' }}>
+                        {!progDetail[p._id] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-neutral-6)', fontSize: 11 }}>
+                            <Loader2 size={11} className="animate-spin" /> Loading…
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {progDetail[p._id].map((e, i) => {
+                              const statusStyle = {
+                                enrolled:  { bg: '#E8EEF5', fg: 'var(--color-vr-blue-6)' },
+                                completed: { bg: 'var(--color-semantics-green-1)', fg: 'var(--color-semantics-green-7)' },
+                                absent:    { bg: 'var(--color-semantics-red-1)', fg: 'var(--color-semantics-red-6)' },
+                                withdrawn: { bg: '#F5F5F5', fg: 'var(--color-neutral-7)' },
+                              }[e.status] ?? { bg: '#F5F5F5', fg: 'var(--color-neutral-7)' };
+                              return (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0.6rem', borderRadius: '0.5rem', background: 'var(--color-neutral-2)' }}>
+                                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: statusStyle.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Users size={11} style={{ color: statusStyle.fg }} />
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ margin: 0, fontSize: 11, fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: 'var(--color-neutral-10)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {e.name ?? e.email ?? e.employeeId}
+                                    </p>
+                                    {e.attendedAt && (
+                                      <p style={{ margin: 0, fontSize: 9, color: 'var(--color-neutral-5)' }}>
+                                        {new Date(e.attendedAt).toLocaleDateString('en-IN')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span style={{ padding: '0.1rem 0.5rem', borderRadius: 99, background: statusStyle.bg, color: statusStyle.fg, fontSize: 9, fontFamily: 'var(--font-in-sb)', fontWeight: 600, flexShrink: 0, textTransform: 'capitalize' }}>
+                                    {e.status}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 );

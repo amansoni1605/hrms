@@ -59,7 +59,7 @@ export type SkillProficiency = 'awareness' | 'working' | 'practitioner' | 'exper
 export type GrantType        = 'esop' | 'rsu' | 'sar' | 'phantom';
 export type GrantStatus      = 'active' | 'exercised' | 'expired' | 'cancelled';
 export type AssetState       = 'pending' | 'provisioned' | 'suspended' | 'deprovisioned' | 'failed';
-export type LeaveStatus      = 'pending' | 'pending_manager' | 'pending_hr' | 'approved' | 'rejected' | 'cancelled';
+export type LeaveStatus      = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type LeaveType        = 'annual' | 'sick' | 'maternity' | 'paternity' | 'unpaid' | 'compensatory';
 export type PayrollStatus    = 'draft' | 'agentic_audit_queued' | 'audit_passed' | 'audit_failed' | 'approved' | 'processing' | 'paid' | 'reversed' | 'cancelled';
 export type DeliveryStatus   = 'queued' | 'rendering' | 'dispatched' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'spam_flagged' | 'failed' | 'cancelled';
@@ -681,7 +681,7 @@ const WLeaveSchema = new Schema(
     endDate:          { type: Date, required: true },
     totalDays:        { type: Number, required: true, min: 0.5 },
     reason:           { type: String, required: true, trim: true },
-    status:           { type: String, enum: ['pending','pending_manager','pending_hr','approved','rejected','cancelled'], default: 'pending' },
+    status:           { type: String, enum: ['pending','approved','rejected','cancelled'], default: 'pending' },
     managerId:        { type: Schema.Types.ObjectId },
     managerApprovedById: { type: Schema.Types.ObjectId },
     managerApprovedAt:   { type: Date },

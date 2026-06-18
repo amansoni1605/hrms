@@ -6,7 +6,7 @@ import mongoose                     from 'mongoose';
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/me/team/leave-approvals
 //
-// Returns leave requests in 'pending_manager' status where the current user is
+// Returns leave requests in 'pending' status where the current user is
 // the designated manager.  Used by the My Team page so line managers (who may
 // have 'employee' role) can see and act on their team's leave requests.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ export const GET = withRoute(async (_req, session) => {
 
   const leaves = await WorkspaceLeaveRequest.find({
     managerId: empOid,
-    status:    'pending_manager',
+    status:    'pending',
   })
     .populate('employeeId', 'employeeCode jobTitle departmentName')
     .sort({ createdAt: 1 })

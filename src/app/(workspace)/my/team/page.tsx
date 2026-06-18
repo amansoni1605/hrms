@@ -77,7 +77,7 @@ function LeaveApprovalsCard() {
     if (!res.ok) {
       toast.push({ kind: 'error', title: json.error ?? 'Action failed' });
     } else {
-      toast.push({ kind: 'success', title: action === 'approve' ? 'Approved — forwarded to HR for final sign-off' : 'Leave rejected' });
+      toast.push({ kind: 'success', title: action === 'approve' ? 'Leave approved' : 'Leave rejected' });
       load();
     }
   };

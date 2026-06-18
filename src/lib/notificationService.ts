@@ -125,7 +125,7 @@ async function send(p: Payload): Promise<void> {
 
 export const notify = {
 
-  /** Employee submitted a leave request → notify their direct manager (or HR if no manager) */
+  /** Employee submitted a leave request → notify manager (if any) AND HR simultaneously */
   async leaveSubmitted(p: {
     tenantId:   string;
     employeeCode: string;
@@ -136,53 +136,36 @@ export const notify = {
     leaveId:    string;
     managerId?: string;
   }) {
+    const body = `${p.leaveType.replace(/_/g, ' ')} · ${p.totalDays} day${p.totalDays !== 1 ? 's' : ''} starting ${p.startDate}`;
+    const metadata = { leaveId: p.leaveId, employeeId: p.employeeId };
+    const sends: Promise<void>[] = [];
+
     if (p.managerId) {
-      // Route to the specific manager first
-      await send({
+      sends.push(send({
         tenantId:   p.tenantId,
         employeeId: p.managerId,
         type:       'leave_request',
         priority:   'normal',
-        title:      `Leave request from ${p.employeeCode} — needs your approval`,
-        body:       `${p.leaveType.replace(/_/g, ' ')} · ${p.totalDays} day${p.totalDays !== 1 ? 's' : ''} starting ${p.startDate}`,
+        title:      `Leave request from ${p.employeeCode} — awaiting your approval`,
+        body,
         actionUrl:  `/leaves`,
-        metadata:   { leaveId: p.leaveId, employeeId: p.employeeId },
-      });
-    } else {
-      // No manager — go straight to HR
-      await send({
-        tenantId:  p.tenantId,
-        roles:     ['hr_admin', 'hr_manager'],
-        type:      'leave_request',
-        priority:  'normal',
-        title:     `Leave request from ${p.employeeCode}`,
-        body:      `${p.leaveType.replace(/_/g, ' ')} · ${p.totalDays} day${p.totalDays !== 1 ? 's' : ''} starting ${p.startDate}`,
-        actionUrl: `/leaves`,
-        metadata:  { leaveId: p.leaveId, employeeId: p.employeeId },
-      });
+        metadata,
+      }));
     }
-  },
 
-  /** Manager approved a leave → notify HR for final sign-off */
-  async leaveForwardedToHR(p: {
-    tenantId:     string;
-    employeeCode: string;
-    employeeId:   string;
-    leaveType:    string;
-    totalDays:    number;
-    startDate:    string;
-    leaveId:      string;
-  }) {
-    await send({
+    // Always notify HR so either party can approve
+    sends.push(send({
       tenantId:  p.tenantId,
-      roles:     ['hr_admin'],
+      roles:     ['hr_admin', 'hr_manager'],
       type:      'leave_request',
       priority:  'normal',
-      title:     `Leave approved by manager — HR sign-off needed for ${p.employeeCode}`,
-      body:      `${p.leaveType.replace(/_/g, ' ')} · ${p.totalDays} day${p.totalDays !== 1 ? 's' : ''} starting ${p.startDate}`,
+      title:     `Leave request from ${p.employeeCode}`,
+      body,
       actionUrl: `/leaves`,
-      metadata:  { leaveId: p.leaveId, employeeId: p.employeeId },
-    });
+      metadata,
+    }));
+
+    await Promise.all(sends);
   },
 
   /** HR approved a leave → notify the employee */

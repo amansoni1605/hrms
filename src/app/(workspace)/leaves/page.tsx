@@ -14,19 +14,17 @@ interface Leave {
 }
 
 const STATUS_TABS = [
-  { value: 'pending_manager', label: '🔸 Mgr Pending' },
-  { value: 'pending_hr',      label: '⏳ HR Pending'   },
-  { value: 'pending',         label: '⏳ Legacy'        },
-  { value: 'approved',        label: '✓ Approved'      },
-  { value: 'rejected',        label: '✗ Rejected'      },
-  { value: '',                label: 'All'              },
+  { value: 'pending',  label: '⏳ Pending'  },
+  { value: 'approved', label: '✓ Approved' },
+  { value: 'rejected', label: '✗ Rejected' },
+  { value: '',         label: 'All'        },
 ];
 
 export default function LeavesPage() {
   const toast                       = useToast();
   const [leaves,  setLeaves]        = useState<Leave[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [statusF, setStatusF]       = useState('pending_manager');
+  const [statusF, setStatusF]       = useState('pending');
   const [acting,  setActing]        = useState<string | null>(null);
   const [total,   setTotal]         = useState(0);
 
@@ -58,9 +56,7 @@ export default function LeavesPage() {
     if (!res.ok) {
       toast.push({ kind: 'error', title: json.error ?? 'Action failed' });
     } else {
-      const msg = action === 'approve'
-        ? (json.data?.status === 'pending_hr' ? 'Forwarded to HR for final approval' : 'Leave approved')
-        : action === 'reject' ? 'Leave rejected' : 'Done';
+      const msg = action === 'approve' ? 'Leave approved' : action === 'reject' ? 'Leave rejected' : 'Done';
       toast.push({ kind: 'success', title: msg });
     }
     load(statusF);
@@ -76,8 +72,7 @@ export default function LeavesPage() {
     setRejectTarget(null);
   };
 
-  const isPendingApproval = (status: string) =>
-    status === 'pending_manager' || status === 'pending_hr' || status === 'pending';
+  const isPendingApproval = (status: string) => status === 'pending';
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -92,7 +87,7 @@ export default function LeavesPage() {
             }}>
               Leave Management
             </h2>
-            {(statusF === 'pending_manager' || statusF === 'pending_hr') && total > 0 && (
+            {statusF === 'pending' && total > 0 && (
               <span style={{
                 padding: '0.2rem 0.8rem', borderRadius: 99,
                 background: '#FFF6E6', border: '1px solid #FFD891',
@@ -104,10 +99,8 @@ export default function LeavesPage() {
             )}
           </div>
           <p style={{ margin: 0, marginTop: 2, color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>
-            {statusF === 'pending_manager'
-              ? 'Leaves waiting for manager approval (step 1 of 2).'
-              : statusF === 'pending_hr'
-              ? 'Manager-approved leaves waiting for your final sign-off (step 2 of 2).'
+            {statusF === 'pending'
+              ? 'Pending leave requests — manager or HR can approve directly.'
               : 'Review, approve, and audit every leave request.'}
           </p>
         </div>
@@ -147,7 +140,7 @@ export default function LeavesPage() {
         fontSize: 'var(--text-fs-12)', color: 'var(--color-vr-blue-8)',
       }}>
         <span style={{ fontFamily: 'var(--font-in-sb)', fontWeight: 700 }}>Approval flow:</span>
-        <span>Employee applies → Manager approves (step 1) → HR gives final sign-off (step 2) → Approved</span>
+        <span>Employee applies → Manager OR HR can approve directly → Approved</span>
       </div>
 
       {/* Table */}
@@ -227,7 +220,7 @@ export default function LeavesPage() {
                         {acting === l._id + 'approve'
                           ? <Loader2 size={10} className="animate-spin" />
                           : <CheckCircle size={10} />}
-                        {l.status === 'pending_manager' ? 'Mgr Approve' : 'Final Approve'}
+                        Approve
                       </button>
                       <button
                         onClick={() => openRejectModal(l._id)}

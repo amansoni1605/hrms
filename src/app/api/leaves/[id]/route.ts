@@ -35,45 +35,37 @@ export async function PUT(
     const isDesignatedManager = !!session.employeeId && leave.managerId?.toString() === session.employeeId;
 
     if (action === 'approve') {
-      if (currentStatus === 'pending_manager') {
-        if (!isMgr && !isDesignatedManager) {
-          return NextResponse.json({ error: 'Only the designated manager can approve this step' }, { status: 403 });
-        }
-        // Manager approved → forward to HR
-        update['status']              = 'pending_hr';
-        update['managerApprovedById'] = session.userId;
-        update['managerApprovedAt']   = new Date();
-      } else if (currentStatus === 'pending_hr' || currentStatus === 'pending') {
-        if (!isHR) {
-          return NextResponse.json({ error: 'Only HR can give final approval' }, { status: 403 });
-        }
-        // Double-booking guard before final approval
-        const clash = await WorkspaceLeaveRequest.findOne({
-          _id:        { $ne: new mongoose.Types.ObjectId(id) },
-          employeeId: leave.employeeId,
-          status:     'approved',
-          startDate:  { $lte: leave.endDate },
-          endDate:    { $gte: leave.startDate },
-        }).lean();
-        if (clash) {
-          return NextResponse.json({ error: 'Employee already has an approved leave overlapping these dates' }, { status: 409 });
-        }
-
-        // Final HR approval
-        update['status']       = 'approved';
-        update['approvedById'] = session.userId;
-        update['approvedAt']   = new Date();
-      } else {
+      if (currentStatus !== 'pending') {
         return NextResponse.json({ error: `Cannot approve a leave in status '${currentStatus}'` }, { status: 400 });
       }
+      // Either the designated line manager OR any HR/manager role can approve directly
+      if (!isHR && !isMgr && !isDesignatedManager) {
+        return NextResponse.json({ error: 'Only the designated manager or HR can approve this leave' }, { status: 403 });
+      }
+
+      // Double-booking guard before approval
+      const clash = await WorkspaceLeaveRequest.findOne({
+        _id:        { $ne: new mongoose.Types.ObjectId(id) },
+        employeeId: leave.employeeId,
+        status:     'approved',
+        startDate:  { $lte: leave.endDate },
+        endDate:    { $gte: leave.startDate },
+      }).lean();
+      if (clash) {
+        return NextResponse.json({ error: 'Employee already has an approved leave overlapping these dates' }, { status: 409 });
+      }
+
+      update['status']       = 'approved';
+      update['approvedById'] = session.userId;
+      update['approvedAt']   = new Date();
     } else if (action === 'reject') {
-      // Designated manager can reject at pending_manager step; HR can reject at any step
-      const canReject = isMgr || (isDesignatedManager && currentStatus === 'pending_manager');
+      // Designated manager or HR can reject a pending leave
+      const canReject = isMgr || isDesignatedManager;
       if (!canReject) {
         return NextResponse.json({ error: 'You are not authorised to reject this leave' }, { status: 403 });
       }
       update['status']          = 'rejected';
-      update['rejectionReason'] = rejectionReason || 'Rejected by manager';
+      update['rejectionReason'] = rejectionReason || 'Rejected';
     } else if (action === 'cancel') {
       if (!isMgr) {
         return NextResponse.json({ error: 'Only HR/managers can cancel a leave' }, { status: 403 });
@@ -114,18 +106,7 @@ export async function PUT(
     const tenantId = ctx.tenantId.toString();
 
     // ── Fire in-app notifications ────────────────────────────────────────
-    if (update['status'] === 'pending_hr') {
-      // Manager approved — notify HR
-      await notify.leaveForwardedToHR({
-        tenantId,
-        employeeCode: String(body['employeeCode'] ?? leave.employeeId.toString()),
-        employeeId:   leave.employeeId.toString(),
-        leaveType:    leave.leaveType,
-        totalDays:    leave.totalDays,
-        startDate:    leave.startDate.toISOString().slice(0, 10),
-        leaveId:      id,
-      });
-    } else if (update['status'] === 'approved') {
+    if (update['status'] === 'approved') {
       await notify.leaveApproved({
         tenantId,
         employeeId: leave.employeeId.toString(),

@@ -78,7 +78,7 @@ export const POST = withRoute(async (req, session) => {
   // Double-booking guard — can't apply if there's already an approved/pending leave overlapping
   const clash = await WorkspaceLeaveRequest.findOne({
     employeeId: empOid,
-    status:     { $in: ['pending_manager', 'pending_hr', 'pending', 'approved'] },
+    status:     { $in: ['pending', 'approved'] },
     startDate:  { $lte: end },
     endDate:    { $gte: start },
   }).lean();
@@ -95,9 +95,6 @@ export const POST = withRoute(async (req, session) => {
   const employeeCode = empDoc?.employeeCode ?? session.name ?? session.email;
   const managerId    = empDoc?.managerId ?? null;
 
-  // Route to manager first if they have one, otherwise straight to HR
-  const initialStatus = managerId ? 'pending_manager' : 'pending_hr';
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leave = await (WorkspaceLeaveRequest as any).create({
     tenantId:   ctx.tenantId,
@@ -107,10 +104,11 @@ export const POST = withRoute(async (req, session) => {
     endDate:    end,
     totalDays,
     reason,
-    status:     initialStatus,
+    status:     'pending',
     managerId:  managerId ?? undefined,
   });
 
+  // Notify BOTH manager (if they have one) AND HR simultaneously — either can approve
   await notify.leaveSubmitted({
     tenantId:     ctx.tenantId.toString(),
     employeeCode,

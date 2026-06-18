@@ -1,5 +1,28 @@
 @import 'tailwindcss';
 
+/* ── react-big-calendar overrides ─────────────────────────────────────────── */
+/* RBC CSS is loaded via layout.tsx (before this file) so these rules win     */
+.rbc-calendar        { font-family: var(--font-in-rg, system-ui), sans-serif; font-size: 16px; }
+.rbc-month-view      { border: none !important; }
+.rbc-header          { background: #F8F9FA; padding: 8px 4px; font-size: 11px; font-weight: 700;
+                       text-transform: uppercase; letter-spacing: .06em; color: #6B7280;
+                       border-bottom: 1px solid #E5E7EB !important; }
+.rbc-header + .rbc-header   { border-left: 1px solid #E5E7EB !important; }
+.rbc-day-bg + .rbc-day-bg   { border-left: 1px solid #F3F4F6 !important; }
+.rbc-month-row + .rbc-month-row { border-top: 1px solid #F3F4F6 !important; }
+.rbc-off-range-bg    { background: #FAFAFA !important; }
+.rbc-today           { background: #EFF6FF !important; }
+.rbc-date-cell       { padding: 4px 8px; font-size: 12px; font-weight: 600; text-align: right; }
+.rbc-date-cell.rbc-now { color: var(--color-vr-blue-7, #1D4ED8); font-weight: 800; }
+.rbc-event           { border: none !important; outline: none !important; }
+.rbc-event:focus     { outline: none !important; box-shadow: none !important; }
+.rbc-event-label     { display: none; }
+.rbc-show-more       { font-size: 10px; color: var(--color-vr-blue-6, #2563EB);
+                       background: transparent; padding: 0 4px; }
+.rbc-selected        { opacity: .85; }
+.rbc-slot-selection  { background: rgba(37, 99, 235, .12); }
+.rbc-row-segment     { padding: 1px 2px; }
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -614,6 +637,95 @@
 
 @media (max-width: 1200px) {
   .sim-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE — token overrides
+   Toggled by adding class="dark" to <html>.
+   All atomic classes (.hrms-card, .hrms-input, etc.) use var() references
+   and inherit these overrides automatically.
+═══════════════════════════════════════════════════════════════════════════ */
+
+html.dark {
+  /* ── Surface & canvas ──────────────────────────────────────────────── */
+  --color-background:  #0D1117;
+  --color-ghost-white: #0D1117;
+  --color-foreground:  #E8EEFF;
+
+  /* ── Neutral scale (inverted for dark) ─────────────────────────────── */
+  --color-neutral-1:  #161B28;   /* card / panel bg           */
+  --color-neutral-2:  #1B2235;   /* slightly elevated surface  */
+  --color-neutral-3:  #212A42;   /* input bg / hover           */
+  --color-neutral-4:  #283252;   /* stronger tint              */
+  --color-neutral-5:  #334068;   /* divider lines              */
+  --color-neutral-6:  #627090;   /* muted icon / label         */
+  --color-neutral-7:  #8A9AB8;   /* secondary text             */
+  --color-neutral-8:  #B8C4DE;   /* body text                  */
+  --color-neutral-9:  #CDD8F0;   /* strong body text           */
+  --color-neutral-10: #E8EEFF;   /* primary headings / labels  */
+  --color-neutral-11: #F0F5FF;
+
+  /* ── Borders & shadows ─────────────────────────────────────────────── */
+  --color-stroke:      #242E4A;
+  --color-narco-black: rgba(0, 0, 0, 0.50);
+  --color-black-08:    rgba(0, 0, 0, 0.30);
+  --shadow-card:       0px 1px 4px 0px rgba(0, 0, 0, 0.50);
+  --shadow-top:        0px -1px 6px 0px rgba(0, 0, 0, 0.55);
+
+  /* ── VR Blue tint backgrounds (light → dark equivalents) ───────────── */
+  --color-vr-blue-1: #162040;
+  --color-vr-blue-2: #1E2D58;
+
+  /* ── Semantic tint backgrounds (light fills → deep dark fills) ─────── */
+  --color-semantics-red-1:   #2D1015;
+  --color-semantics-red-2:   #3E1620;
+  --color-semantics-green-1: #0D2818;
+  --color-semantics-green-2: #123520;
+  --color-semantics-blue-1:  #12204A;
+  --color-semantics-blue-2:  #1A2D60;
+  --color-semantics-aqua-1:  #0E1E32;
+  --color-semantics-aqua-2:  #142540;
+
+  /* ── Table accent fills ─────────────────────────────────────────────── */
+  --color-table-green-1:  #1A3828;
+  --color-table-green-2:  #224830;
+  --color-table-yellow-1: #2E2800;
+  --color-table-yellow-2: #3A3400;
+  --color-table-red-1:    #3D1414;
+  --color-table-red-2:    #4A1818;
+}
+
+/* ── react-big-calendar dark overrides ─────────────────────────────────────
+   Base RBC rules use !important; these must do the same to win.           */
+html.dark .rbc-header {
+  background: var(--color-neutral-2) !important;
+  color:      var(--color-neutral-7) !important;
+  border-bottom-color: var(--color-stroke) !important;
+}
+html.dark .rbc-header + .rbc-header          { border-left-color:  var(--color-stroke) !important; }
+html.dark .rbc-day-bg + .rbc-day-bg          { border-left-color:  var(--color-stroke) !important; }
+html.dark .rbc-month-row + .rbc-month-row    { border-top-color:   var(--color-stroke) !important; }
+html.dark .rbc-off-range-bg                  { background: var(--color-neutral-2) !important; }
+html.dark .rbc-today                         { background: var(--color-vr-blue-1) !important; }
+html.dark .rbc-date-cell                     { color: var(--color-neutral-8); }
+html.dark .rbc-date-cell.rbc-now            { color: var(--color-vr-blue-3) !important; }
+html.dark .rbc-show-more                     { color: var(--color-vr-blue-3) !important; }
+
+/* ── Dashed dividers ───────────────────────────────────────────────────────── */
+html.dark .dashed-hr {
+  background-image: repeating-linear-gradient(
+    to right, var(--color-stroke) 0 4px, transparent 4px 8px
+  );
+}
+html.dark .dashed-hr-sm {
+  background-image: repeating-linear-gradient(
+    to right, var(--color-stroke) 0 2px, transparent 2px 4px
+  );
+}
+
+/* ── Custom scrollbar in dark mode ─────────────────────────────────────────── */
+html.dark .custom-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /*

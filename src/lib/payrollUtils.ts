@@ -3,7 +3,7 @@
  * Used by the payroll run creation route and the audit worker.
  */
 
-import { WorkspaceLeaveRequest, WorkspaceAttendance } from '@/models/workspace.models';
+import { WorkspaceLeaveRequest, WorkspaceAttendance, WorkspaceHRSettings } from '@/models/workspace.models';
 import { indiaEngine }                               from '@/lib/taxEngines/india';
 import mongoose                                      from 'mongoose';
 
@@ -11,12 +11,39 @@ import mongoose                                      from 'mongoose';
 // Working-day calendar
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function workingDaysInMonth(year: number, month: number): number {
+/**
+ * Fetch national/restricted holidays for a given month from HR settings.
+ * Optional holidays are excluded — employees still need approved leave for those.
+ */
+export async function fetchHolidaysForMonth(
+  tenantId: string,
+  year:     number,
+  month:    number,
+): Promise<Set<string>> {
+  const settings = await WorkspaceHRSettings.findOne(
+    { tenantId: new mongoose.Types.ObjectId(tenantId) },
+  ).select('holidays').lean();
+
+  const set = new Set<string>();
+  for (const h of ((settings as unknown as { holidays?: Array<{ date: string; type: string }> })?.holidays ?? [])) {
+    if (h.type === 'optional') continue; // optional holidays are not auto-paid
+    const d = new Date(h.date);
+    if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+  }
+  return set;
+}
+
+export function workingDaysInMonth(year: number, month: number, holidays: Set<string> = new Set()): number {
   const d = new Date(year, month - 1, 1);
   let count = 0;
   while (d.getMonth() === month - 1) {
     const day = d.getDay();
-    if (day !== 0 && day !== 6) count++;
+    if (day !== 0 && day !== 6) {
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!holidays.has(dateStr)) count++;
+    }
     d.setDate(d.getDate() + 1);
   }
   return count;
@@ -49,6 +76,7 @@ export async function getAttendanceForPeriod(
   month:      number,
   year:       number,
   tenantId?:  string,
+  holidays:   Set<string> = new Set(),
 ): Promise<{ attendanceDays: number; leaveDaysDeducted: number; lwpDays: number }> {
   const start = new Date(year, month - 1, 1);
   const end   = new Date(year, month,     0, 23, 59, 59);
@@ -88,7 +116,7 @@ export async function getAttendanceForPeriod(
     }
   }
 
-  const working = workingDaysInMonth(year, month);
+  const working = workingDaysInMonth(year, month, holidays);
 
   const attendanceDays = checkedInDays > 0
     ? Math.min(checkedInDays, working)

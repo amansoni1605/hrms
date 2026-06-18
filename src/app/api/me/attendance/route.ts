@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse }  from 'next/server';
 import { withRoute }                  from '@/lib/withRoute';
-import { WorkspaceAttendance }        from '@/models/workspace.models';
+import { WorkspaceAttendance, WorkspaceHRSettings } from '@/models/workspace.models';
 import { TenantContext }              from '@/infrastructure/multiTenantCore';
 import mongoose                       from 'mongoose';
 
@@ -55,5 +55,20 @@ export const GET = withRoute(async (req, session) => {
   const totalLogged  = summary.length;
   const days         = Math.round((until.getTime() - since.getTime()) / 86_400_000) + 1;
 
-  return NextResponse.json({ data: { summary, stats: { presentDays, halfDays, totalLogged, days } } });
+  // Fetch holidays that fall within this period so the calendar can display them.
+  const settingsDoc = await WorkspaceHRSettings.findOne({ tenantId: ctx.tenantId })
+    .select('holidays').lean();
+  type HolidayDoc = { date: string | Date; name: string; type: string };
+  const holidays = ((settingsDoc as unknown as { holidays?: HolidayDoc[] })?.holidays ?? [])
+    .filter((h) => { const d = new Date(h.date); return d >= since && d <= until; })
+    .map((h) => {
+      const d = new Date(h.date);
+      return {
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        name: h.name,
+        type: h.type,
+      };
+    });
+
+  return NextResponse.json({ data: { summary, stats: { presentDays, halfDays, totalLogged, days }, holidays } });
 });

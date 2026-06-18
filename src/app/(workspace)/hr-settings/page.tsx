@@ -46,6 +46,23 @@ const TABS = [
 
 const HOLIDAY_TYPES = ['national','optional','restricted'];
 
+const INDIA_HOLIDAYS_2026: Holiday[] = [
+  { date: '2026-01-01', name: "New Year's Day",      type: 'optional'    },
+  { date: '2026-01-26', name: 'Republic Day',         type: 'national'   },
+  { date: '2026-03-20', name: 'Holi',                 type: 'national'   },
+  { date: '2026-04-03', name: 'Good Friday',          type: 'national'   },
+  { date: '2026-04-14', name: 'Dr. Ambedkar Jayanti', type: 'national'   },
+  { date: '2026-05-01', name: 'Labour Day',           type: 'restricted' },
+  { date: '2026-08-15', name: 'Independence Day',     type: 'national'   },
+  { date: '2026-08-21', name: 'Raksha Bandhan',       type: 'restricted' },
+  { date: '2026-08-27', name: 'Janmashtami',          type: 'national'   },
+  { date: '2026-10-02', name: 'Gandhi Jayanti',       type: 'national'   },
+  { date: '2026-10-22', name: 'Dussehra',             type: 'national'   },
+  { date: '2026-11-02', name: 'Diwali',               type: 'national'   },
+  { date: '2026-11-03', name: 'Diwali Holiday',       type: 'national'   },
+  { date: '2026-12-25', name: 'Christmas',            type: 'national'   },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -467,8 +484,20 @@ export default function HRSettingsPage() {
               <h3 style={{ margin: 0, fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
                 Holiday Calendar · {new Date().getFullYear()}
               </h3>
-              <button onClick={() => patch('holidays', [...settings.holidays, { date: new Date().toISOString().slice(0, 10), name: 'New Holiday', type: 'national' }])}
-                className="hrms-btn-ghost" style={{ fontSize: 11 }}><Plus size={12} /> Add Holiday</button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => {
+                    const existing = new Set(settings.holidays.map((h) => h.date.slice(0, 10)));
+                    const toAdd = INDIA_HOLIDAYS_2026.filter((h) => !existing.has(h.date));
+                    if (toAdd.length === 0) return;
+                    patch('holidays', [...settings.holidays, ...toAdd].sort((a, b) => a.date.localeCompare(b.date)));
+                  }}
+                  className="hrms-btn-ghost" style={{ fontSize: 11 }}>
+                  <RefreshCw size={12} /> Seed India 2026
+                </button>
+                <button onClick={() => patch('holidays', [...settings.holidays, { date: new Date().toISOString().slice(0, 10), name: 'New Holiday', type: 'national' }])}
+                  className="hrms-btn-ghost" style={{ fontSize: 11 }}><Plus size={12} /> Add Holiday</button>
+              </div>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>{['Date','Holiday Name','Type',''].map((h) => <th key={h} className="hrms-th">{h}</th>)}</tr></thead>

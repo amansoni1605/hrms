@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-import { ToastProvider } from '@/components/ui/Toast';
+import { ToastProvider }   from '@/components/ui/Toast';
+import { ThemeProvider }   from '@/components/shell/ThemeProvider';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './globals.css';
 
 const inter = Inter({
@@ -24,7 +26,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jakarta.variable}`} suppressHydrationWarning>
+      {/*
+        Anti-flash script: runs synchronously before first paint.
+        Reads localStorage / system preference and adds class="dark"
+        to <html> before React hydrates, eliminating the white flash.
+      */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('hrms-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
         style={{
           margin: 0,
@@ -34,9 +48,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           fontFamily: 'var(--font-in-rg)',
         }}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

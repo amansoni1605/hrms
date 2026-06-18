@@ -1,12 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Calendar, dateFnsLocalizer, Views, type EventProps } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enIN } from 'date-fns/locale';
 import {
   CheckCircle, XCircle, Loader2, MapPin,
   FilePen, X, ChevronLeft, ChevronRight,
   CalendarDays, LogOut,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+
+// ── date-fns localizer ────────────────────────────────────────────────────────
+const locales   = { 'en-IN': enIN };
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -27,6 +34,12 @@ interface AttendanceStats {
   days: number;
 }
 
+interface HolidayInfo {
+  date: string;
+  name: string;
+  type: string;
+}
+
 interface RegRequest {
   _id:               string;
   date:              string;
@@ -37,7 +50,21 @@ interface RegRequest {
   rejectionReason?:  string;
 }
 
-const WEEKDAYS    = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+interface CalEvent {
+  title:    string;
+  start:    Date;
+  end:      Date;
+  resource: {
+    kind:      'attendance' | 'holiday' | 'pending';
+    status?:   'present' | 'half_day' | 'absent';
+    dateStr:   string;
+    hours?:    number;
+    checkIn?:  Date | null;
+    checkOut?: Date | null;
+    holiday?:  HolidayInfo;
+  };
+}
+
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December',
@@ -45,10 +72,12 @@ const MONTH_NAMES = [
 const LEAVE_TYPES = ['annual','sick','maternity','paternity','unpaid','compensatory'] as const;
 type LeaveType = typeof LEAVE_TYPES[number];
 
-const STATUS_COLOR = {
-  present:  { bg: '#DCFCE7', fg: '#15803D', dot: '#22C55E' },
-  half_day: { bg: '#FEF9C3', fg: '#854D0E', dot: '#EAB308' },
-  absent:   { bg: '#FEE2E2', fg: '#B91C1C', dot: '#EF4444' },
+const STATUS_STYLE = {
+  present:  { bg: '#DCFCE7', fg: '#15803D', border: '#86EFAC', dot: '#22C55E', label: 'Present' },
+  half_day: { bg: '#FEF9C3', fg: '#854D0E', border: '#FDE047', dot: '#EAB308', label: 'Half Day' },
+  absent:   { bg: '#FEE2E2', fg: '#B91C1C', border: '#FCA5A5', dot: '#EF4444', label: 'Absent' },
+  holiday:  { bg: '#FFF7ED', fg: '#C2410C', border: '#FDBA74', dot: '#F97316', label: 'Holiday' },
+  pending:  { bg: '#FFFBEB', fg: '#92400E', border: '#FCD34D', dot: '#F59E0B', label: 'Pending' },
 };
 
 const REG_STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
@@ -58,8 +87,62 @@ const REG_STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom Event Chip
+// ─────────────────────────────────────────────────────────────────────────────
+
+function AttendanceEvent({ event }: EventProps<CalEvent>) {
+  const { kind, status, checkIn, holiday } = event.resource;
+
+  if (kind === 'holiday') {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700,
+        color: STATUS_STYLE.holiday.fg, background: STATUS_STYLE.holiday.bg,
+        border: `1px solid ${STATUS_STYLE.holiday.border}`, borderRadius: 4,
+        padding: '1px 5px', overflow: 'hidden',
+      }}>
+        🎉 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{holiday!.name}</span>
+      </div>
+    );
+  }
+
+  if (kind === 'pending') {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700,
+        color: STATUS_STYLE.pending.fg, background: STATUS_STYLE.pending.bg,
+        border: `1px solid ${STATUS_STYLE.pending.border}`, borderRadius: 4, padding: '1px 5px',
+      }}>
+        ⏳ Reg. Pending
+      </div>
+    );
+  }
+
+  if (!status) return null;
+  const s = STATUS_STYLE[status];
+  const timeStr = checkIn
+    ? new Date(checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : null;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700,
+      color: s.fg, background: s.bg, border: `1px solid ${s.border}`,
+      borderRadius: 4, padding: '1px 5px', overflow: 'hidden',
+    }}>
+      <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {s.label}{timeStr ? ` · ${timeStr}` : ''}
+      </span>
+    </div>
+  );
+}
+
+function NoToolbar() { return null; }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Regularize Modal
@@ -102,7 +185,6 @@ function RegularizeModal({
       <p style={{ margin: 0, fontSize: 11, color: 'var(--color-neutral-7)', background: '#EFF6FF', padding: '0.6rem 0.9rem', borderRadius: 6, border: '1px solid #BFDBFE' }}>
         Regularizing <strong>{fmtDate(date)}</strong> — will be sent to your manager for approval.
       </p>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
         <div>
           <FieldLabel>Check-in Time</FieldLabel>
@@ -118,7 +200,6 @@ function RegularizeModal({
             style={{ width: '100%', opacity: includeOut ? 1 : 0.4 }} />
         </div>
       </div>
-
       <div>
         <FieldLabel required>Reason</FieldLabel>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)}
@@ -127,7 +208,6 @@ function RegularizeModal({
           style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 'var(--text-fs-12)' }} />
         <p style={{ margin: '2px 0 0', fontSize: 10, color: 'var(--color-neutral-5)', textAlign: 'right' }}>{reason.length}/500</p>
       </div>
-
       <ModalActions onClose={onClose} onSubmit={submit} submitting={submitting} label="Submit Request" />
     </Modal>
   );
@@ -183,12 +263,9 @@ function ApplyLeaveModal({
             className="hrms-input" style={{ width: '100%' }} />
         </div>
       </div>
-
-      {/* Duration badge */}
       <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 6, padding: '0.5rem 0.9rem', fontSize: 12, color: '#15803D', fontWeight: 600 }}>
         {totalDays} working day{totalDays > 1 ? 's' : ''} · {fmtDate(start)}{start !== end ? ` → ${fmtDate(end)}` : ''}
       </div>
-
       <div>
         <FieldLabel>Leave Type</FieldLabel>
         <select value={leaveType} onChange={(e) => setLeaveType(e.target.value as LeaveType)}
@@ -198,7 +275,6 @@ function ApplyLeaveModal({
           ))}
         </select>
       </div>
-
       <div>
         <FieldLabel required>Reason</FieldLabel>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)}
@@ -206,7 +282,6 @@ function ApplyLeaveModal({
           rows={3} maxLength={500} className="hrms-input"
           style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 'var(--text-fs-12)' }} />
       </div>
-
       <ModalActions onClose={onClose} onSubmit={submit} submitting={submitting} label="Submit Leave" submitStyle={{ background: '#D97706' }} />
     </Modal>
   );
@@ -258,204 +333,88 @@ function ModalActions({ onClose, onSubmit, submitting, label, submitStyle }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calendar Grid
+// Day Detail Popover
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AttendanceCalendar({
-  year, month, summaryMap, pendingDates,
-  selStart, selEnd,
-  onDayClick,
+function DayDetailPanel({
+  dateStr, summary, holiday, isPending, onRegularize, onApplyLeave, onClose,
 }: {
-  year: number; month: number;
-  summaryMap:  Map<string, DaySummary>;
-  pendingDates:Set<string>;
-  selStart:    string | null;
-  selEnd:      string | null;
-  onDayClick:  (date: string) => void;
-}) {
-  const today       = new Date().toISOString().slice(0, 10);
-  const firstDay    = new Date(year, month - 1, 1).getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
-
-  const cells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const fmtTime = (v: Date | null | undefined) =>
-    v ? new Date(v).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
-
-  // Range highlight helpers
-  const rangeStart = selStart && selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
-  const rangeEnd   = selStart && selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
-
-  const inRange = (d: string) => !!rangeStart && !!rangeEnd && d >= rangeStart && d <= rangeEnd;
-  const isEdge  = (d: string) => d === rangeStart || d === rangeEnd;
-
-  return (
-    <div>
-      {/* Weekday headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 3 }}>
-        {WEEKDAYS.map((d) => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-6)', padding: '4px 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      {/* Day cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-        {cells.map((day, idx) => {
-          if (!day) return <div key={`e-${idx}`} />;
-
-          const dateStr  = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isToday  = dateStr === today;
-          const isFuture = dateStr > today;
-          const data     = summaryMap.get(dateStr);
-          const colors   = data ? STATUS_COLOR[data.status] : null;
-          const hasPending = pendingDates.has(dateStr);
-          const selected = inRange(dateStr);
-          const isEdgeDay = isEdge(dateStr);
-          const checkInTime  = fmtTime(data?.checkIn as Date | null | undefined);
-          const checkOutTime = fmtTime(data?.checkOut as Date | null | undefined);
-
-          let bg = isToday
-            ? '#EFF6FF'
-            : isFuture
-              ? 'var(--color-neutral-2)'
-              : colors ? colors.bg : '#FEF2F2';
-
-          if (selected) bg = isEdgeDay ? '#1E40AF' : '#BFDBFE';
-
-          return (
-            <div
-              key={dateStr}
-              onClick={() => !isFuture && !isToday && onDayClick(dateStr)}
-              style={{
-                borderRadius: 8,
-                padding: '6px 5px',
-                minHeight: 72,
-                cursor:    isFuture || isToday ? 'default' : 'pointer',
-                background: bg,
-                border:    isToday
-                  ? '2px solid var(--color-vr-blue-6)'
-                  : isEdgeDay
-                    ? '2px solid #1E40AF'
-                    : selected
-                      ? '1px solid #93C5FD'
-                      : '1px solid transparent',
-                position:  'relative',
-                transition:'box-shadow 100ms, background 100ms',
-                userSelect:'none',
-              }}
-              onMouseEnter={(e) => {
-                if (!isFuture && !isToday) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
-            >
-              {/* Day number */}
-              <div style={{
-                fontSize: 12, fontWeight: isToday || isEdgeDay ? 800 : 600,
-                color: isEdgeDay ? '#fff' : selected ? '#1E40AF'
-                  : isToday ? 'var(--color-vr-blue-7)'
-                  : colors ? colors.fg : isFuture ? 'var(--color-neutral-5)' : '#9B1C1C',
-                marginBottom: 2,
-              }}>
-                {day}
-              </div>
-
-              {/* Status dot + label */}
-              {colors && !selected && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: colors.dot }} />
-                  <span style={{ fontSize: 8, color: colors.fg, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {data!.status.replace('_', ' ')}
-                  </span>
-                </div>
-              )}
-
-              {/* Times */}
-              {checkInTime && !selected && (
-                <div style={{ fontSize: 9, color: isEdgeDay ? '#fff' : 'var(--color-neutral-7)', lineHeight: 1.4 }}>
-                  {checkInTime}{checkOutTime && <><br />{checkOutTime}</>}
-                </div>
-              )}
-
-              {/* No data label */}
-              {!data && !isFuture && !isToday && !selected && (
-                <div style={{ fontSize: 9, color: '#9B1C1C', fontWeight: 600, marginTop: 2 }}>No data</div>
-              )}
-
-              {/* Selected label on edge */}
-              {isEdgeDay && (
-                <div style={{ fontSize: 8, color: '#fff', marginTop: 3, fontWeight: 700, opacity: .8 }}>
-                  {dateStr === selStart ? 'Start' : 'End'}
-                </div>
-              )}
-
-              {/* Pending dot */}
-              {hasPending && (
-                <div style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#F59E0B', border: '1.5px solid #fff' }} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Selection Action Bar
-// ─────────────────────────────────────────────────────────────────────────────
-
-function SelectionBar({
-  selStart, selEnd,
-  onRegularize, onApplyLeave, onClear,
-}: {
-  selStart:     string;
-  selEnd:       string | null;
+  dateStr:    string;
+  summary:    DaySummary | undefined;
+  holiday:    HolidayInfo | undefined;
+  isPending:  boolean;
   onRegularize: () => void;
   onApplyLeave: () => void;
-  onClear:      () => void;
+  onClose:    () => void;
 }) {
-  const isRange = selEnd && selEnd !== selStart;
-  const label   = isRange
-    ? `${fmtDate(selStart)} → ${fmtDate(selEnd!)}`
-    : fmtDate(selStart);
+  const today   = new Date().toISOString().slice(0, 10);
+  const isFuture = dateStr > today;
+
+  const fmt = (v: Date | null | undefined) =>
+    v ? new Date(v).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap',
-      padding: '0.8rem 1.2rem',
-      background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8,
-      marginBottom: '0.6rem',
-    }}>
-      <span style={{ fontSize: 'var(--text-fs-12)', color: '#1E40AF', fontWeight: 600, flex: 1 }}>
-        {isRange ? '📅' : '📌'} Selected: <strong>{label}</strong>
-        {isRange
-          ? <span style={{ fontWeight: 400, color: '#3B82F6', marginLeft: 6 }}>({Math.ceil((new Date(selEnd!).getTime() - new Date(selStart).getTime()) / 86_400_000) + 1}d)</span>
-          : <span style={{ fontWeight: 400, color: '#64748B', fontSize: 11, marginLeft: 6 }}>click another day to extend range</span>
-        }
-      </span>
+      position: 'fixed', inset: 0, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.3)',
+    }} onClick={onClose}>
+      <div className="hrms-card" onClick={(e) => e.stopPropagation()}
+        style={{ width: 320, padding: '1.4rem', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h4 style={{ margin: 0, fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
+            {new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}
+          </h4>
+          <button onClick={onClose} className="hrms-btn-ghost" style={{ padding: '0.25rem' }}><X size={13} /></button>
+        </div>
 
-      {!isRange && (
-        <button onClick={onRegularize} className="hrms-btn-ghost"
-          style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--color-vr-blue-7)', borderColor: '#BFDBFE' }}>
-          <FilePen size={12} /> Regularize
-        </button>
-      )}
+        {holiday && (
+          <div style={{ background: STATUS_STYLE.holiday.bg, border: `1px solid ${STATUS_STYLE.holiday.border}`, borderRadius: 6, padding: '0.5rem 0.8rem', fontSize: 12, color: STATUS_STYLE.holiday.fg, fontWeight: 600 }}>
+            🎉 {holiday.name}
+            <span style={{ fontSize: 10, fontWeight: 400, marginLeft: 6, textTransform: 'capitalize' }}>({holiday.type})</span>
+          </div>
+        )}
 
-      <button onClick={onApplyLeave} className="hrms-btn-primary"
-        style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, background: '#D97706' }}>
-        <CalendarDays size={12} /> Apply Leave
-      </button>
+        {summary && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+            {[
+              { label: 'Status', value: summary.status.replace('_', ' ') },
+              { label: 'Hours', value: summary.hours > 0 ? `${summary.hours.toFixed(1)}h` : '—' },
+              { label: 'Check In', value: fmt(summary.checkIn as Date | null | undefined) },
+              { label: 'Check Out', value: fmt(summary.checkOut as Date | null | undefined) },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p style={{ margin: '0 0 2px', fontSize: 10, color: 'var(--color-neutral-6)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
+                <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-neutral-10)', textTransform: 'capitalize' }}>{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
-      <button onClick={onClear} className="hrms-btn-ghost"
-        style={{ fontSize: 12, padding: '0.4rem 0.6rem', color: 'var(--color-neutral-6)' }}>
-        <X size={12} />
-      </button>
+        {!summary && !holiday && !isFuture && (
+          <p style={{ margin: 0, fontSize: 12, color: '#9B1C1C', fontWeight: 600 }}>No attendance data recorded.</p>
+        )}
+
+        {isPending && (
+          <div style={{ background: STATUS_STYLE.pending.bg, border: `1px solid ${STATUS_STYLE.pending.border}`, borderRadius: 6, padding: '0.4rem 0.8rem', fontSize: 11, color: STATUS_STYLE.pending.fg, fontWeight: 600 }}>
+            ⏳ Regularization request pending approval
+          </div>
+        )}
+
+        {!isFuture && !holiday && (
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-stroke)', paddingTop: '0.8rem' }}>
+            {!summary && (
+              <button onClick={onRegularize} className="hrms-btn-ghost"
+                style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--color-vr-blue-7)' }}>
+                <FilePen size={12} /> Regularize
+              </button>
+            )}
+            <button onClick={onApplyLeave} className="hrms-btn-primary"
+              style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, background: '#D97706' }}>
+              <CalendarDays size={12} /> Apply Leave
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -475,15 +434,15 @@ export default function MyAttendancePage() {
   const [summary,     setSummary]     = useState<DaySummary[]>([]);
   const [stats,       setStats]       = useState<AttendanceStats | null>(null);
   const [requests,    setRequests]    = useState<RegRequest[]>([]);
+  const [holidays,    setHolidays]    = useState<HolidayInfo[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [checking,    setChecking]    = useState(false);
 
-  // Selection state
-  const [selStart, setSelStart] = useState<string | null>(null);
-  const [selEnd,   setSelEnd]   = useState<string | null>(null);
-
-  // Modal state
-  const [modal, setModal] = useState<'regularize' | 'leave' | null>(null);
+  const [detailDate, setDetailDate] = useState<string | null>(null);
+  const [modal,      setModal]      = useState<'regularize' | 'leave' | null>(null);
+  const [leaveStart, setLeaveStart] = useState<string | null>(null);
+  const [leaveEnd,   setLeaveEnd]   = useState<string | null>(null);
+  const [regDate,    setRegDate]    = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -498,6 +457,7 @@ export default function MyAttendancePage() {
     setTodayStatus(todayJson.data ?? null);
     setSummary(histJson.data?.summary ?? []);
     setStats(histJson.data?.stats ?? null);
+    setHolidays(histJson.data?.holidays ?? []);
     setRequests(regJson.data ?? []);
     setLoading(false);
   }, [calYear, calMonth]);
@@ -519,39 +479,91 @@ export default function MyAttendancePage() {
     }
   };
 
-  const handleDayClick = (date: string) => {
-    if (!selStart) {
-      // First click — set start
-      setSelStart(date); setSelEnd(null);
-    } else if (date === selStart && !selEnd) {
-      // Same day clicked again — deselect
-      setSelStart(null); setSelEnd(null);
-    } else {
-      // Second click — set end (keep ordered)
-      const [s, e] = date < selStart ? [date, selStart] : [selStart, date];
-      setSelStart(s); setSelEnd(e);
+  const summaryMap   = useMemo(() => new Map(summary.map((d) => [d.date.slice(0, 10), d])), [summary]);
+  const pendingDates = useMemo(() => new Set(requests.filter((r) => r.status === 'pending').map((r) => r.date.slice(0, 10))), [requests]);
+  const holidayMap   = useMemo(() => new Map(holidays.map((h) => [h.date, h])), [holidays]);
+
+  const calEvents = useMemo<CalEvent[]>(() => {
+    const today  = new Date().toISOString().slice(0, 10);
+    const events: CalEvent[] = [];
+
+    for (const d of summary) {
+      const dateStr = d.date.slice(0, 10);
+      if (dateStr > today) continue;
+      events.push({
+        title: `${d.status.replace('_', ' ')}${d.checkIn ? ` · ${new Date(d.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`,
+        start: new Date(dateStr + 'T00:00:00'),
+        end:   new Date(dateStr + 'T23:59:59'),
+        resource: { kind: 'attendance', status: d.status, dateStr, hours: d.hours, checkIn: d.checkIn as Date | null | undefined, checkOut: d.checkOut as Date | null | undefined },
+      });
     }
-  };
 
-  const clearSelection = () => { setSelStart(null); setSelEnd(null); };
+    for (const h of holidays) {
+      events.push({
+        title: `🎉 ${h.name}`,
+        start: new Date(h.date + 'T00:00:00'),
+        end:   new Date(h.date + 'T23:59:59'),
+        resource: { kind: 'holiday', dateStr: h.date, holiday: h },
+      });
+    }
 
-  const openRegularize = () => setModal('regularize');
-  const openLeave      = () => setModal('leave');
-  const closeModal     = () => setModal(null);
+    for (const dateStr of pendingDates) {
+      if (!summaryMap.has(dateStr)) {
+        events.push({
+          title: '⏳ Reg. Pending',
+          start: new Date(dateStr + 'T00:00:00'),
+          end:   new Date(dateStr + 'T23:59:59'),
+          resource: { kind: 'pending', dateStr },
+        });
+      }
+    }
+
+    return events;
+  }, [summary, holidays, pendingDates, summaryMap]);
+
+  const dayPropGetter = useCallback((date: Date) => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const today   = new Date().toISOString().slice(0, 10);
+    const s       = summaryMap.get(dateStr);
+    const isHol   = holidayMap.has(dateStr);
+
+    if (dateStr > today) return {};
+    if (s)     return { style: { background: STATUS_STYLE[s.status].bg } };
+    if (isHol) return { style: { background: STATUS_STYLE.holiday.bg } };
+    if (dateStr < today) return { style: { background: '#FFF5F5' } };
+    return {};
+  }, [summaryMap, holidayMap]);
+
+  const eventPropGetter = useCallback(() => {
+    return { style: { background: 'transparent', border: 'none', padding: 0 } };
+  }, []);
+
+  const handleSelectEvent = useCallback((event: CalEvent) => {
+    setDetailDate(event.resource.dateStr);
+  }, []);
+
+  const handleSelectSlot = useCallback(({ start }: { start: Date }) => {
+    const today   = new Date().toISOString().slice(0, 10);
+    const dateStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+    if (dateStr >= today) return;
+    setDetailDate(dateStr);
+  }, []);
 
   const shiftMonth = (delta: number) => {
     let m = calMonth + delta, y = calYear;
     if (m > 12) { m = 1; y++; }
     if (m < 1)  { m = 12; y--; }
     setCalMonth(m); setCalYear(y);
-    clearSelection();
   };
+
+  const calDate = useMemo(() => new Date(calYear, calMonth - 1, 1), [calYear, calMonth]);
+
+  const detailSummary = detailDate ? summaryMap.get(detailDate) : undefined;
+  const detailHoliday = detailDate ? holidayMap.get(detailDate) : undefined;
+  const detailPending = detailDate ? pendingDates.has(detailDate) : false;
 
   const fmt = (iso: string | null) =>
     iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
-
-  const summaryMap  = new Map(summary.map((d) => [d.date.slice(0, 10), d]));
-  const pendingDates = new Set(requests.filter((r) => r.status === 'pending').map((r) => r.date.slice(0, 10)));
 
   const todayDate     = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
   const attendancePct = stats ? Math.round((stats.presentDays + (stats.halfDays ?? 0) * 0.5) / Math.max(1, stats.days) * 100) : 0;
@@ -603,10 +615,10 @@ export default function MyAttendancePage() {
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.4rem' }}>
           {[
-            { label: 'Present',       value: stats.presentDays, color: '#15803D' },
-            { label: 'Half Day',      value: stats.halfDays,    color: '#854D0E' },
-            { label: 'Working Days',  value: stats.days,        color: 'var(--color-vr-blue-6)' },
-            { label: 'Attendance %',  value: `${attendancePct}%`, color: attendancePct >= 90 ? '#15803D' : '#B91C1C' },
+            { label: 'Present',      value: stats.presentDays,   color: '#15803D' },
+            { label: 'Half Day',     value: stats.halfDays,       color: '#854D0E' },
+            { label: 'Working Days', value: stats.days,           color: 'var(--color-vr-blue-6)' },
+            { label: 'Attendance %', value: `${attendancePct}%`,  color: attendancePct >= 90 ? '#15803D' : '#B91C1C' },
           ].map((kpi) => (
             <div key={kpi.label} className="hrms-kpi-card">
               <p className="hrms-kpi-label">{kpi.label}</p>
@@ -618,16 +630,43 @@ export default function MyAttendancePage() {
 
       {/* ── Calendar ── */}
       <div className="hrms-card" style={{ overflow: 'hidden', marginBottom: '1.4rem' }}>
-        {/* Header */}
+        {/* Header with month/year selectors */}
         <div style={{ padding: '1rem 1.4rem', borderBottom: '1px solid var(--color-stroke)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <button onClick={() => shiftMonth(-1)} className="hrms-btn-ghost" style={{ padding: '0.4rem' }}>
             <ChevronLeft size={14} />
           </button>
-          <h3 style={{ margin: 0, flex: 1, textAlign: 'center', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)', color: 'var(--color-neutral-10)' }}>
-            {MONTH_NAMES[calMonth - 1]} {calYear}
-          </h3>
-          <button onClick={() => shiftMonth(1)} className="hrms-btn-ghost" style={{ padding: '0.4rem' }}
-            disabled={calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth >= now.getMonth() + 1)}>
+
+          {/* Month + year pickers */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+            <select
+              value={calMonth}
+              onChange={(e) => setCalMonth(Number(e.target.value))}
+              className="hrms-input"
+              style={{ width: 130, padding: '0.35rem 0.8rem', fontSize: 'var(--text-fs-13)', fontWeight: 600, cursor: 'pointer' }}
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <option key={i + 1} value={i + 1}>{name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={calYear}
+              onChange={(e) => {
+                const y = Number(e.target.value);
+                if (y >= 2000 && y <= 2099) setCalYear(y);
+              }}
+              className="hrms-input"
+              style={{ width: 80, padding: '0.35rem 0.8rem', fontSize: 'var(--text-fs-13)', fontWeight: 600 }}
+              min={2000} max={2099}
+            />
+          </div>
+
+          <button
+            onClick={() => shiftMonth(1)}
+            className="hrms-btn-ghost"
+            style={{ padding: '0.4rem' }}
+            disabled={calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth >= now.getMonth() + 1)}
+          >
             <ChevronRight size={14} />
           </button>
         </div>
@@ -637,39 +676,37 @@ export default function MyAttendancePage() {
           {[
             { dot: '#22C55E', label: 'Present' },
             { dot: '#EAB308', label: 'Half Day' },
-            { dot: '#EF4444', label: 'Absent' },
+            { dot: '#EF4444', label: 'Absent / No data' },
+            { dot: '#F97316', label: 'Public Holiday' },
             { dot: '#F59E0B', label: 'Regularization pending' },
-            { dot: '#1E40AF', label: 'Selected' },
           ].map(({ dot, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--color-neutral-7)' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: dot }} />{label}
             </div>
           ))}
           <p style={{ margin: '0 0 0 auto', fontSize: 11, color: 'var(--color-neutral-5)', fontStyle: 'italic' }}>
-            Click a day to select · drag to range
+            Click a day to view details or apply leave
           </p>
         </div>
 
-        <div style={{ padding: '1rem 1.4rem' }}>
-          {/* Selection action bar */}
-          {selStart && (
-            <SelectionBar
-              selStart={selStart}
-              selEnd={selEnd}
-              onRegularize={openRegularize}
-              onApplyLeave={openLeave}
-              onClear={clearSelection}
-            />
-          )}
-
-          <AttendanceCalendar
-            year={calYear}
-            month={calMonth}
-            summaryMap={summaryMap}
-            pendingDates={pendingDates}
-            selStart={selStart}
-            selEnd={selEnd}
-            onDayClick={handleDayClick}
+        {/* Calendar — font-size wrapper resets em base to 16 px (html is 62.5 %) */}
+        <div style={{ padding: '0.8rem 1.4rem 1.4rem', fontSize: 16 }}>
+          <Calendar<CalEvent>
+            localizer={localizer}
+            events={calEvents}
+            defaultView={Views.MONTH}
+            views={[Views.MONTH]}
+            date={calDate}
+            onNavigate={() => {}}
+            components={{ toolbar: NoToolbar, event: AttendanceEvent }}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            dayPropGetter={dayPropGetter}
+            eventPropGetter={eventPropGetter}
+            style={{ height: 520 }}
+            popup
+            showAllEvents
           />
         </div>
       </div>
@@ -719,20 +756,33 @@ export default function MyAttendancePage() {
         )}
       </div>
 
-      {/* ── Modals ── */}
-      {modal === 'regularize' && selStart && (
-        <RegularizeModal
-          date={selStart}
-          onClose={closeModal}
-          onSuccess={() => { loadData(); clearSelection(); }}
+      {/* ── Day Detail Panel ── */}
+      {detailDate && (
+        <DayDetailPanel
+          dateStr={detailDate}
+          summary={detailSummary}
+          holiday={detailHoliday}
+          isPending={detailPending}
+          onRegularize={() => { setDetailDate(null); setRegDate(detailDate); setModal('regularize'); }}
+          onApplyLeave={() => { setDetailDate(null); setLeaveStart(detailDate); setLeaveEnd(detailDate); setModal('leave'); }}
+          onClose={() => setDetailDate(null)}
         />
       )}
-      {modal === 'leave' && selStart && (
+
+      {/* ── Modals ── */}
+      {modal === 'regularize' && regDate && (
+        <RegularizeModal
+          date={regDate}
+          onClose={() => setModal(null)}
+          onSuccess={() => { loadData(); setRegDate(null); }}
+        />
+      )}
+      {modal === 'leave' && leaveStart && (
         <ApplyLeaveModal
-          startDate={selStart}
-          endDate={selEnd ?? selStart}
-          onClose={closeModal}
-          onSuccess={() => { loadData(); clearSelection(); }}
+          startDate={leaveStart}
+          endDate={leaveEnd ?? leaveStart}
+          onClose={() => setModal(null)}
+          onSuccess={() => { loadData(); setLeaveStart(null); setLeaveEnd(null); }}
         />
       )}
     </div>

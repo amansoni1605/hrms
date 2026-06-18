@@ -42,7 +42,10 @@ const APP_URL = () => process.env['APP_URL']      ?? process.env['NEXTAUTH_URL']
 
 async function dispatch(to: string, subject: string, html: string) {
   const t = getTransport();
-  if (!t) return; // no-op when SMTP not configured
+  if (!t) {
+    console.warn(`[mailer] SMTP not configured — email "${subject}" to ${to} was NOT sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS in environment variables.`);
+    return;
+  }
   try {
     await t.sendMail({ from: FROM(), to, subject, html });
   } catch (err) {

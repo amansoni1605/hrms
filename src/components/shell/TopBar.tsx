@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, ChevronDown, Settings } from 'lucide-react';
+import { Search, ChevronDown, Settings, Sun, Moon } from 'lucide-react';
 import { type UserRole } from '@/models/workspace.models';
 import { NotificationBell, NotificationDrawer } from './NotificationDrawer';
+import { useTheme } from './ThemeProvider';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sticky 56px top bar — Ghost White bg, single bottom border-stroke.
@@ -30,9 +31,10 @@ export interface TopBarProps {
 }
 
 export function TopBar({ title, subtitle, role, userName }: TopBarProps) {
-  const [search,          setSearch]          = useState('');
-  const [notifOpen,       setNotifOpen]       = useState(false);
+  const [search,    setSearch]    = useState('');
+  const [notifOpen, setNotifOpen] = useState(false);
   const router = useRouter();
+  const { theme, toggle } = useTheme();
 
   return (
     <>
@@ -96,6 +98,22 @@ export function TopBar({ title, subtitle, role, userName }: TopBarProps) {
 
         {/* Right controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              padding: 8, borderRadius: '0.6rem',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--color-neutral-7)',
+              transition: 'background 120ms ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-neutral-3)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
           {/* Live notification bell */}
           <NotificationBell onClick={() => setNotifOpen(true)} />
 

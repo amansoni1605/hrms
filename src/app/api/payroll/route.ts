@@ -5,7 +5,7 @@ import { WorkspacePayrollRun, WorkspaceEmployee } from '@/models/workspace.model
 import { getTenantDEK, TenantContext, decryptNumber } from '@/infrastructure/multiTenantCore';
 import { notify }                          from '@/lib/notificationService';
 import { applyDueCompRevisions }           from '@/lib/compensation';
-import { computePayComponents, getAttendanceForPeriod, workingDaysInMonth } from '@/lib/payrollUtils';
+import { computePayComponents, getAttendanceForPeriod, workingDaysInMonth, fetchHolidaysForMonth } from '@/lib/payrollUtils';
 import { payrollAuditQueue }               from '@/lib/queues/payrollAudit';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 
@@ -65,17 +65,20 @@ export const POST = withFeature('payroll', async (req, session) => {
   const tid = ctx.tenantId.toString();
   const { key: dekKey } = await getTenantDEK(tid);
 
+  // Fetch public/restricted holidays so they are excluded from working days and LWP.
+  const holidaySet = await fetchHolidaysForMonth(tid, year, month);
+
   // Decrypt salary, compute pay components with real India TDS, fetch real attendance.
   // Falls back to ₹80,000 if base salary field is missing or unreadable.
   const FALLBACK_BASE  = 80_000;
-  const wdInMonth      = workingDaysInMonth(year, month);
+  const wdInMonth      = workingDaysInMonth(year, month, holidaySet);
   const payData = await Promise.all(activeEmps.map(async (e) => {
     let base = FALLBACK_BASE;
     try {
       if (e.baseSalaryEnc) base = await decryptNumber(tid, e.baseSalaryEnc as Buffer);
     } catch { /* keep fallback */ }
     const cc  = e.currencyCode ?? 'INR';
-    const att = await getAttendanceForPeriod(e._id.toString(), month, year, tid)
+    const att = await getAttendanceForPeriod(e._id.toString(), month, year, tid, holidaySet)
       .catch(() => ({ attendanceDays: wdInMonth, leaveDaysDeducted: 0, lwpDays: 0 }));
     const comps = computePayComponents(base, cc, att.lwpDays, wdInMonth);
     return { e, base, cc, ...comps, ...att };

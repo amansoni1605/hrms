@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HRMS Pro — Tenant Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:   #1C509D;
+    --blue-l: #E8EEF5;
+    --blue-d: #14396F;
+    --purple: #783489;
+    --green:  #16a34a;
+    --green-l:#f0fdf4;
+    --amber:  #92400e;
+    --amber-l:#fffbeb;
+    --red:    #b91c1c;
+    --red-l:  #fef2f2;
+    --gray-1: #f9fafb;
+    --gray-2: #f3f4f6;
+    --gray-3: #e5e7eb;
+    --gray-5: #6b7280;
+    --gray-7: #374151;
+    --gray-9: #111827;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-1);
+    color: var(--gray-9);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff;
+    border-bottom: 1px solid var(--gray-3);
+    padding: 0 2rem;
+    display: flex; align-items: center; gap: 1rem;
+    height: 56px;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: .6rem;
+    font-weight: 700; font-size: 1.05rem; color: var(--gray-9);
+    text-decoration: none; flex-shrink: 0;
+  }
+  .nav-logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 900; font-size: .95rem;
+  }
+  .nav-links {
+    display: flex; gap: .2rem; overflow-x: auto; flex: 1;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a {
+    padding: .35rem .75rem; border-radius: 6px;
+    text-decoration: none; font-size: .8rem; font-weight: 500;
+    color: var(--gray-5); white-space: nowrap;
+    transition: background 150ms, color 150ms;
+  }
+  .nav-links a:hover { background: var(--gray-2); color: var(--gray-9); }
+  .nav-badge {
+    padding: .25rem .7rem; border-radius: 99px;
+    background: var(--blue-l); color: var(--blue);
+    font-size: .72rem; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center; padding: 3rem 2rem 2.5rem;
+    background: linear-gradient(135deg, #f0f7ff 0%, #f5f0ff 100%);
+    border: 1px solid var(--gray-3); border-radius: 16px;
+    margin-bottom: 2.5rem;
+  }
+  .hero h1 { font-size: 2.2rem; font-weight: 800; color: var(--gray-9); margin-bottom: .5rem; letter-spacing: -.02em; }
+  .hero p  { color: var(--gray-5); font-size: 1.05rem; max-width: 560px; margin: 0 auto 1.5rem; }
+  .hero-chips { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
+  .chip {
+    padding: .3rem .85rem; border-radius: 99px;
+    font-size: .75rem; font-weight: 600;
+    border: 1px solid;
+  }
+  .chip-blue   { background: var(--blue-l);  color: var(--blue);   border-color: #b6ceea; }
+  .chip-purple { background: #f6edf9;         color: var(--purple); border-color: #d9b3e8; }
+  .chip-green  { background: var(--green-l);  color: var(--green);  border-color: #bbf7d0; }
+  .chip-amber  { background: var(--amber-l);  color: var(--amber);  border-color: #fde68a; }
+  .chip-red    { background: var(--red-l);    color: var(--red);    border-color: #fecaca; }
+  .chip-gray   { background: var(--gray-2);   color: var(--gray-5); border-color: var(--gray-3); }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr { margin: 2.5rem 0 1.2rem; display: flex; align-items: center; gap: .7rem; }
+  .section-hdr h2 { font-size: 1.1rem; font-weight: 700; color: var(--gray-9); }
+  .section-line { flex: 1; height: 1px; background: var(--gray-3); }
+  .section-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    font-size: .72rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── ROLE TABLE ── */
+  .role-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .75rem; margin-bottom: 2.5rem;
+  }
+  .role-card {
+    background: #fff; border: 1px solid var(--gray-3); border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+  }
+  .role-card h3 { font-size: .8rem; font-weight: 700; margin-bottom: .3rem; }
+  .role-card p  { font-size: .75rem; color: var(--gray-5); line-height: 1.5; }
+  .role-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: .4rem;
+  }
+
+  /* ── MODULE CARD ── */
+  .module-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.2rem;
+  }
+  .module-card {
+    background: #fff; border: 1px solid var(--gray-3);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    transition: box-shadow 200ms;
+  }
+  .module-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,.12); }
+  .module-card-head {
+    padding: 1.1rem 1.3rem .8rem;
+    border-bottom: 1px solid var(--gray-3);
+    display: flex; align-items: flex-start; gap: .8rem;
+  }
+  .module-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+  }
+  .module-card-head h3 { font-size: .95rem; font-weight: 700; color: var(--gray-9); margin-bottom: .15rem; }
+  .module-card-head p  { font-size: .76rem; color: var(--gray-5); line-height: 1.5; }
+  .module-card-body { padding: .9rem 1.3rem 1.1rem; flex: 1; display: flex; flex-direction: column; gap: .8rem; }
+
+  /* who can access pills */
+  .access-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
+  .access-label { font-size: .7rem; font-weight: 600; color: var(--gray-5); text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0; }
+
+  /* workflow steps */
+  .workflow { display: flex; flex-direction: column; gap: .35rem; }
+  .workflow-title { font-size: .72rem; font-weight: 700; color: var(--gray-7); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .1rem; }
+  .step {
+    display: flex; gap: .6rem; align-items: flex-start;
+    font-size: .78rem; color: var(--gray-7);
+  }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--blue-l); color: var(--blue);
+    font-size: .65rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-arrow { color: var(--gray-5); font-size: .7rem; margin-top: 2px; flex-shrink: 0; }
+
+  /* key actions */
+  .actions { display: flex; flex-direction: column; gap: .3rem; }
+  .action-item {
+    display: flex; gap: .5rem; align-items: flex-start;
+    font-size: .77rem; color: var(--gray-7);
+  }
+  .action-bullet {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--blue); flex-shrink: 0; margin-top: 6px;
+  }
+
+  /* notes / tips */
+  .tip {
+    display: flex; gap: .5rem; padding: .6rem .8rem;
+    border-radius: 7px; font-size: .75rem; line-height: 1.5;
+    margin-top: .2rem;
+  }
+  .tip-icon { flex-shrink: 0; font-size: .85rem; margin-top: 1px; }
+  .tip-info    { background: var(--blue-l);  color: #1e4080; }
+  .tip-warn    { background: var(--amber-l); color: var(--amber); }
+  .tip-success { background: var(--green-l); color: #166534; }
+
+  /* journey diagram */
+  .journey {
+    display: flex; align-items: center; gap: .3rem;
+    flex-wrap: wrap; margin-bottom: 2rem;
+    padding: 1.2rem 1.4rem;
+    background: #fff; border: 1px solid var(--gray-3);
+    border-radius: 14px; box-shadow: var(--shadow);
+  }
+  .j-stage {
+    display: flex; flex-direction: column; align-items: center; gap: .3rem;
+    min-width: 90px;
+  }
+  .j-bubble {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; border: 2px solid;
+  }
+  .j-label { font-size: .68rem; font-weight: 600; color: var(--gray-7); text-align: center; }
+  .j-arrow { color: var(--gray-3); font-size: 1.1rem; font-weight: 300; }
+
+  /* quick ref table */
+  .quick-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  .quick-table th {
+    background: var(--gray-2); color: var(--gray-7);
+    font-weight: 600; text-align: left; padding: .55rem .9rem;
+    border-bottom: 1px solid var(--gray-3);
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .quick-table td {
+    padding: .55rem .9rem; border-bottom: 1px solid var(--gray-3);
+    vertical-align: top; color: var(--gray-7);
+  }
+  .quick-table tr:last-child td { border-bottom: none; }
+  .quick-table tr:hover td { background: var(--gray-1); }
+  .quick-wrap { background: #fff; border: 1px solid var(--gray-3); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 2rem; }
+
+  /* footer */
+  footer {
+    margin-top: 4rem; padding: 2rem 1.5rem;
+    text-align: center; color: var(--gray-5); font-size: .78rem;
+    border-top: 1px solid var(--gray-3);
+  }
+
+  @media (max-width: 640px) {
+    .module-grid { grid-template-columns: 1fr; }
+    .role-grid   { grid-template-columns: 1fr 1fr; }
+    .hero h1     { font-size: 1.6rem; }
+    .journey     { justify-content: flex-start; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ NAV ══════════════════════════════════════════ -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">H</div>
+    HRMS Pro
+  </a>
+  <div class="nav-links">
+    <a href="#roles">Roles</a>
+    <a href="#journey">Journey</a>
+    <a href="#recruitment">Recruitment</a>
+    <a href="#onboarding">Onboarding</a>
+    <a href="#training">Training</a>
+    <a href="#employees">Employees</a>
+    <a href="#attendance">Attendance</a>
+    <a href="#leaves">Leaves</a>
+    <a href="#payroll">Payroll</a>
+    <a href="#expenses">Expenses</a>
+    <a href="#performance">Performance</a>
+    <a href="#separation">Separation</a>
+    <a href="#analytics">Analytics</a>
+    <a href="#settings">Settings</a>
+    <a href="#quickref">Quick Ref</a>
+  </div>
+  <span class="nav-badge">v1.0 Guide</span>
+</nav>
+
+<!-- ══════════════════════════════════════════ PAGE ══════════════════════════════════════════ -->
+<div class="page">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>HRMS Pro — Tenant Guide</h1>
+  <p>Everything your team needs to understand, configure, and operate every module of your HR platform.</p>
+  <div class="hero-chips">
+    <span class="chip chip-blue">Multi-tenant</span>
+    <span class="chip chip-purple">Role-based access</span>
+    <span class="chip chip-green">End-to-end employee lifecycle</span>
+    <span class="chip chip-amber">India tax compliant</span>
+    <span class="chip chip-gray">Real-time analytics</span>
+  </div>
+</div>
+
+<!-- ══════════════ ROLES ══════════════ -->
+<div id="roles" class="section-hdr">
+  <div class="section-num">1</div>
+  <h2>User Roles &amp; Access Levels</h2>
+  <div class="section-line"></div>
+</div>
+
+<div class="role-grid">
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#783489"></span>Super Admin</h3>
+    <p>Full platform access. Manages all tenants, billing, DEK rotation, system health, and all HR functions. Typically the platform owner.</p>
+  </div>
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#1C509D"></span>HR Admin</h3>
+    <p>Full HR access within the tenant — employees, payroll, recruitment, onboarding, training, separation, analytics, and all settings.</p>
+  </div>
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#3759BF"></span>HR Manager</h3>
+    <p>Manages their team's attendance, leaves, expenses, and performance reviews. Cannot run payroll or access org-wide analytics.</p>
+  </div>
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#92400e"></span>Payroll Officer</h3>
+    <p>Runs payroll, views all payslips and salary data, approves expenses. Cannot manage employees or HR configurations.</p>
+  </div>
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#0f766e"></span>Finance Auditor</h3>
+    <p>Read-only access to payroll, expenses, and salary data for auditing. Can approve expense claims at the finance stage.</p>
+  </div>
+  <div class="role-card">
+    <h3><span class="role-dot" style="background:#6b7280"></span>Employee</h3>
+    <p>Sees only their own data — profile, payslips, leaves, expenses, attendance, training, onboarding, and tax studio.</p>
+  </div>
+</div>
+
+<!-- ══════════════ EMPLOYEE JOURNEY ══════════════ -->
+<div id="journey" class="section-hdr">
+  <div class="section-num">2</div>
+  <h2>Full Employee Lifecycle</h2>
+  <div class="section-line"></div>
+</div>
+
+<div class="journey">
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#eff6ff;border-color:#bfdbfe;">🎯</div>
+    <div class="j-label">Job Opening<br/>Posted</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#f0fdf4;border-color:#bbf7d0;">📋</div>
+    <div class="j-label">Applicant<br/>Shortlisted</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#fffbeb;border-color:#fde68a;">📄</div>
+    <div class="j-label">Offer<br/>Extended</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#f5f3ff;border-color:#ddd6fe;">✅</div>
+    <div class="j-label">Hired &amp;<br/>Onboarding</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#fef2f2;border-color:#fecaca;">📚</div>
+    <div class="j-label">Training<br/>In Progress</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#f0fdf4;border-color:#86efac;">🚀</div>
+    <div class="j-label">Fully<br/>Ramped</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#eff6ff;border-color:#93c5fd;">👤</div>
+    <div class="j-label">Active<br/>Employee</div>
+  </div>
+  <div class="j-arrow">→</div>
+  <div class="j-stage">
+    <div class="j-bubble" style="background:#fff7ed;border-color:#fed7aa;">🔚</div>
+    <div class="j-label">Separation<br/>&amp; F&amp;F</div>
+  </div>
+</div>
+
+<!-- ══════════════ MODULES ══════════════ -->
+
+<!-- ─── RECRUITMENT ─── -->
+<div id="recruitment" class="section-hdr">
+  <div class="section-num">3</div>
+  <h2>Recruitment</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">🎯</div>
+      <div>
+        <h3>Job Openings</h3>
+        <p>Create and manage open positions. Attach department, location, headcount, and salary band.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">How to post a job</div>
+        <div class="step"><div class="step-num">1</div><span>Go to <strong>Recruitment</strong> in the sidebar</span></div>
+        <div class="step"><div class="step-num">2</div><span>Click <strong>New Opening</strong> → fill title, department, headcount</span></div>
+        <div class="step"><div class="step-num">3</div><span>Set status to <strong>open</strong> to start receiving applicants</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Each opening tracks how many positions are filled vs. total headcount.</div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">👥</div>
+      <div>
+        <h3>Applicant Pipeline</h3>
+        <p>Track candidates from shortlist → offer → hire. Kanban view per opening.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Hiring an applicant</div>
+        <div class="step"><div class="step-num">1</div><span>Open the applicant's profile from the pipeline</span></div>
+        <div class="step"><div class="step-num">2</div><span>Move them through stages: <strong>Shortlisted → Offer Extended → Offer Accepted</strong></span></div>
+        <div class="step"><div class="step-num">3</div><span>Click <strong>Hire</strong> — system creates employee record, login account, and onboarding checklist automatically</span></div>
+        <div class="step"><div class="step-num">4</div><span>A <strong>temporary password</strong> (Welcome@XXXX) is shown — share it with the employee</span></div>
+      </div>
+      <div class="tip tip-success"><span class="tip-icon">✅</span>Hiring is atomic — if anything fails, no partial records are created.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── ONBOARDING ─── -->
+<div id="onboarding" class="section-hdr">
+  <div class="section-num">4</div>
+  <h2>Onboarding</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f5f3ff;">📋</div>
+      <div>
+        <h3>HR View — Onboarding Tracker</h3>
+        <p>Monitor all new hire checklists. Mark tasks complete on behalf of IT, manager, or HR.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Click any employee row to expand their checklist</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Tick tasks to mark them complete — triggers status updates automatically</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>When onboarding is <strong>100% complete</strong>, the employee is auto-enrolled in mandatory training</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Training status (Enrolled / Completed) is visible in the expanded panel</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Default tasks cover: documentation, IT setup, orientation, compliance, and equipment.</div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">✅</div>
+      <div>
+        <h3>Employee View — My Onboarding</h3>
+        <p>Employees see and complete their own assigned tasks with a live progress bar.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Employee (own only)</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Employee journey</div>
+        <div class="step"><div class="step-num">1</div><span>Log in with the temp password provided by HR</span></div>
+        <div class="step"><div class="step-num">2</div><span>Go to <strong>My Onboarding</strong> in the sidebar</span></div>
+        <div class="step"><div class="step-num">3</div><span>Click each task assigned to you to mark it complete</span></div>
+        <div class="step"><div class="step-num">4</div><span>When all tasks are done → Training programs unlock automatically</span></div>
+      </div>
+      <div class="tip tip-warn"><span class="tip-icon">⚠️</span>Tasks assigned to IT, HR, or Manager can only be completed by HR — employees see them as read-only.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── TRAINING ─── -->
+<div id="training" class="section-hdr">
+  <div class="section-num">5</div>
+  <h2>Training &amp; Development</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fffbeb;">📚</div>
+      <div>
+        <h3>Training Programs</h3>
+        <p>Create mandatory and optional programs. Track enrollment and completion per employee.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin — full control</span>
+          <span class="chip chip-green">Employee — My Training tab</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">First-time setup</div>
+        <div class="step"><div class="step-num">1</div><span>Go to <strong>Training → All Programs</strong></span></div>
+        <div class="step"><div class="step-num">2</div><span>Click <strong>Seed Default Programs</strong> to add 12 standard programs (POSH, Code of Conduct, InfoSec, DEI, etc.)</span></div>
+        <div class="step"><div class="step-num">3</div><span>Mandatory programs auto-enroll every new hire when their onboarding completes</span></div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Click <strong>View Enrollments</strong> on any card to see who enrolled and their completion status</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Employees click <strong>Mark Complete</strong> on their My Training tab when they finish</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>When all mandatory programs are complete → employee is automatically marked <strong>Fully Ramped</strong> and status becomes Active</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0f9ff;">🗺️</div>
+      <div>
+        <h3>Learning Paths</h3>
+        <p>Group programs into ordered learning journeys by role or track.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Go to <strong>Training → Learning Paths</strong></span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Click <strong>New Path</strong> → name it and select programs in order</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Assign a target role (e.g. "Engineer Onboarding Path")</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Learning paths help structure training for specific roles or departments but don't auto-enroll — enroll employees into the individual programs.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── EMPLOYEES ─── -->
+<div id="employees" class="section-hdr">
+  <div class="section-num">6</div>
+  <h2>Employee Management</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">👤</div>
+      <div>
+        <h3>Employee Directory</h3>
+        <p>View, search, and manage all employee profiles. All PII is AES-256-GCM encrypted at rest.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+          <span class="chip chip-amber">Payroll Officer</span>
+          <span class="chip chip-gray">Finance Auditor</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Search by name, employee code, department, or job title</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Click any employee to open their full profile — personal info, job details, compensation history, assets</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Update job title, department, manager, salary, or employment type inline</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Employee status: <strong>pre_hire → active → on_leave → terminated</strong></span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Employees hired via Recruitment automatically activate to <strong>Active</strong> once all mandatory training is complete.</div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f6edf9;">🏢</div>
+      <div>
+        <h3>Departments</h3>
+        <p>Manage the org's department tree. Track headcount, cost centres, and hierarchy.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Create departments with a parent (for sub-teams) or as top-level units</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Assign a department head — they appear in reporting chains</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Headcount updates automatically when employees are hired or separated</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── ATTENDANCE ─── -->
+<div id="attendance" class="section-hdr">
+  <div class="section-num">7</div>
+  <h2>Attendance</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">🕐</div>
+      <div>
+        <h3>Daily Attendance Logs</h3>
+        <p>Clock-in / clock-out with geofencing. Automatic status calculation per day.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin — all employees</span>
+          <span class="chip chip-blue">HR Manager — their team</span>
+          <span class="chip chip-green">Employee — own records</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Present</strong> — worked 4+ hours</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Half Day</strong> — worked 2–4 hours</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Absent</strong> — worked less than 2 hours</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>HR can <strong>regularize</strong> attendance for exceptions (travel, off-site, etc.)</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Employees clock in via <strong>My Attendance</strong>. Location is verified against the office geofence (150m radius by default).</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── LEAVES ─── -->
+<div id="leaves" class="section-hdr">
+  <div class="section-num">8</div>
+  <h2>Leave Management</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fffbeb;">📅</div>
+      <div>
+        <h3>Leave Requests</h3>
+        <p>Employees apply for leave; managers and HR approve through a two-stage workflow.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Employee — own requests</span>
+          <span class="chip chip-blue">HR Manager — team</span>
+          <span class="chip chip-purple">HR Admin — all</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Approval flow</div>
+        <div class="step"><div class="step-num">1</div><span>Employee submits leave from <strong>My Leaves</strong></span></div>
+        <div class="step"><div class="step-num">2</div><span>Manager reviews — approves or rejects with a reason</span></div>
+        <div class="step"><div class="step-num">3</div><span>HR Admin does final approval if required by policy</span></div>
+        <div class="step"><div class="step-num">4</div><span>Employee receives an in-app notification on status change</span></div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Leave types: <strong>Annual, Sick, Maternity, Paternity, Unpaid, Compensatory</strong></span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Leave balances are tracked per employee per year</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">📆</div>
+      <div>
+        <h3>Leave Calendar</h3>
+        <p>Team-level view of who is on leave, on which dates. Helps managers plan coverage.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Go to <strong>Compliance → Leave Calendar</strong></span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Filter by department or date range</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Approved leaves appear as colour-coded blocks per employee</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── PAYROLL ─── -->
+<div id="payroll" class="section-hdr">
+  <div class="section-num">9</div>
+  <h2>Payroll</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">💰</div>
+      <div>
+        <h3>Payroll Runs</h3>
+        <p>Monthly payroll calculation with statutory deductions, India tax regime support, and payslip generation.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-amber">Payroll Officer</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Running payroll</div>
+        <div class="step"><div class="step-num">1</div><span>Go to <strong>Payroll</strong> and click <strong>New Run</strong></span></div>
+        <div class="step"><div class="step-num">2</div><span>Select month/year — system pulls attendance, leaves, and deductions automatically</span></div>
+        <div class="step"><div class="step-num">3</div><span>Review the run summary — check gross, deductions, and net totals</span></div>
+        <div class="step"><div class="step-num">4</div><span>Click <strong>Approve &amp; Run</strong> — payslips are generated for all active employees</span></div>
+        <div class="step"><div class="step-num">5</div><span>Employees can view and download their payslip from <strong>My Payslips</strong></span></div>
+      </div>
+      <div class="tip tip-warn"><span class="tip-icon">⚠️</span>Always run payroll after attendance is finalised for the month. Late clock-ins after payroll runs are not retroactively applied.</div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fef2f2;">🧮</div>
+      <div>
+        <h3>Tax Studio (Employee)</h3>
+        <p>Employees choose between Old and New tax regime, enter 80C/80D investments, and simulate take-home pay.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Every employee (own data)</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Go to <strong>Tax Studio</strong> in the sidebar</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Enter 80C investments (PPF, ELSS, LIC, etc.) and 80D premiums</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>System computes tax under both regimes and shows which saves more</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>§87A rebate and 4% cess applied automatically for AY 2026-27</span></div>
+      </div>
+      <div class="tip tip-success"><span class="tip-icon">✅</span>Tax Studio is a simulation tool — declarations must be submitted separately to HR for Form 12BB processing.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── EXPENSES ─── -->
+<div id="expenses" class="section-hdr">
+  <div class="section-num">10</div>
+  <h2>Expense Claims</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fffbeb;">🧾</div>
+      <div>
+        <h3>Expense Management</h3>
+        <p>Employees submit expense claims; managers and finance approve in a two-step process.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Employee — submit own</span>
+          <span class="chip chip-blue">HR Manager — stage 1 approve</span>
+          <span class="chip chip-gray">Finance Auditor — stage 2 approve</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Approval flow</div>
+        <div class="step"><div class="step-num">1</div><span>Employee submits from <strong>My Expenses</strong> with receipts and amounts</span></div>
+        <div class="step"><div class="step-num">2</div><span>Manager approves (<strong>Manager Approve</strong>) — claim moves to finance queue</span></div>
+        <div class="step"><div class="step-num">3</div><span>Finance Auditor does final approval and sets sanctioned amount</span></div>
+        <div class="step"><div class="step-num">4</div><span>Finance marks as <strong>Paid</strong> after bank transfer</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Either stage can reject the claim. The employee is notified by in-app notification at every status change.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── PERFORMANCE ─── -->
+<div id="performance" class="section-hdr">
+  <div class="section-num">11</div>
+  <h2>Performance &amp; PMS</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">🎯</div>
+      <div>
+        <h3>Performance Reviews</h3>
+        <p>Cycle-based reviews with self-assessment, manager rating, and HR sign-off.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Employee — self-rate</span>
+          <span class="chip chip-blue">HR Manager — rate team</span>
+          <span class="chip chip-purple">HR Admin — all reviews</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Review cycle</div>
+        <div class="step"><div class="step-num">1</div><span>HR Admin creates a review cycle (Q1, H1, Annual, etc.)</span></div>
+        <div class="step"><div class="step-num">2</div><span>Employee submits self-assessment ratings</span></div>
+        <div class="step"><div class="step-num">3</div><span>Manager reviews and adds their ratings</span></div>
+        <div class="step"><div class="step-num">4</div><span>HR finalises and links any compensation change</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f6edf9;">💸</div>
+      <div>
+        <h3>Compensation Approvals</h3>
+        <p>Two-step increment / promotion approval with skip-level and Segregation of Duties enforcement.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager (initiates)</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Go to <strong>Performance → Comp Approvals</strong></span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Initiator submits the change; a different approver must sign off (SoD rule — same person cannot initiate and approve)</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Approved increments are effective-dated — salary updates on the specified date</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Full compensation history is logged and visible to HR on the employee profile</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">🚩</div>
+      <div>
+        <h3>Goals (OKRs)</h3>
+        <p>Employees and managers set quarterly goals linked to performance cycles.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-green">Employee — own goals</span>
+          <span class="chip chip-blue">HR Manager — team goals</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Go to <strong>My Goals</strong> to create and track personal OKRs</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Update progress (%) and status (on-track, at-risk, completed) regularly</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Goals feed into the performance review cycle automatically</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── SEPARATION ─── -->
+<div id="separation" class="section-hdr">
+  <div class="section-num">12</div>
+  <h2>Separation &amp; Offboarding</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fff7ed;">🔚</div>
+      <div>
+        <h3>Separation Management</h3>
+        <p>Manage resignation, termination, retirement, and contract-end. Calculates Full &amp; Final automatically.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="workflow">
+        <div class="workflow-title">Offboarding process</div>
+        <div class="step"><div class="step-num">1</div><span>Click <strong>Initiate Separation</strong> → search for the employee by name</span></div>
+        <div class="step"><div class="step-num">2</div><span>Select type (Resignation / Termination / Retirement / Contract End)</span></div>
+        <div class="step"><div class="step-num">3</div><span>Set notice date and last working day</span></div>
+        <div class="step"><div class="step-num">4</div><span>An offboarding checklist is created — IT, HR, Finance, and Manager tasks</span></div>
+        <div class="step"><div class="step-num">5</div><span>Full &amp; Final (F&amp;F) is calculated: pending salary + leave encashment + gratuity − deductions</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Gratuity is calculated at 15 days' salary per year of service (threshold: 5 years, 26 working days/month).</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── ANALYTICS ─── -->
+<div id="analytics" class="section-hdr">
+  <div class="section-num">13</div>
+  <h2>Analytics &amp; Burnout AI</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">📊</div>
+      <div>
+        <h3>Organisation Analytics</h3>
+        <p>Headcount, payroll totals, leave trends, and department-wise risk heatmap.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+          <span class="chip chip-amber">Payroll Officer</span>
+          <span class="chip chip-gray">Finance Auditor</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Summary cards: total employees, active, on leave, pending leave requests, latest payroll total</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Risk distribution donut: High / Medium / Low burnout risk across the org</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Department scatter: headcount vs. average burnout risk (spot problem departments)</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>6-month leave trend: approved vs. rejected leave requests over time</span></div>
+      </div>
+      <div class="tip tip-warn"><span class="tip-icon">⚠️</span>Payroll total shows ₹0 until your first payroll run is completed. Run payroll to see accurate figures.</div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#fef2f2;">🔥</div>
+      <div>
+        <h3>Burnout AI</h3>
+        <p>ML-derived burnout and flight-risk scores per employee. Department heatmap and watchlist.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span><strong>High risk ≥ 0.7</strong> — urgent attention needed</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Medium risk 0.4–0.7</strong> — monitor closely</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Low risk &lt; 0.4</strong> — healthy</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Watchlist shows employees who have shown a recent increase in risk score</span></div>
+      </div>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span>Risk scores are computed from attendance patterns, overtime, leave frequency, and performance signals. Scores update nightly.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── TALENT PIPELINE ─── -->
+<div id="talent" class="section-hdr">
+  <div class="section-num">14</div>
+  <h2>Talent Pipeline</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">🔀</div>
+      <div>
+        <h3>Candidate Pipeline Kanban</h3>
+        <p>Visual kanban tracking every candidate from shortlist to fully ramped. Updates in real-time as onboarding and training progress.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin</span>
+          <span class="chip chip-blue">HR Manager</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Shortlisted</strong> → <strong>Offer Extended</strong> → <strong>Offer Accepted</strong> — managed in Recruitment</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Onboarding Active</strong> → <strong>Onboarding Completed</strong> — driven by the onboarding checklist</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Training In Progress</strong> → <strong>Fully Ramped</strong> — auto-updated when mandatory training is complete</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Each card links directly to the employee profile and onboarding record</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── SETTINGS ─── -->
+<div id="settings" class="section-hdr">
+  <div class="section-num">15</div>
+  <h2>Settings &amp; Configuration</h2>
+  <div class="section-line"></div>
+</div>
+<div class="module-grid" style="margin-bottom:1.5rem">
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f6edf9;">⚙️</div>
+      <div>
+        <h3>HR Settings</h3>
+        <p>Configure your organisation's branding, leave policies, attendance rules, and compliance settings.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin only</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Branding</strong> — upload company logo and set brand colour</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Attendance</strong> — office location, geofence radius, working-hours thresholds</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Leave Policy</strong> — allowed types, accrual rules, carry-forward limits</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Compliance</strong> — PF, ESI, professional tax toggles</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span><strong>Probation period</strong> — default duration for new hires</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#eff6ff;">👥</div>
+      <div>
+        <h3>App Settings (All Users)</h3>
+        <p>Personal preferences — change your password, notification settings, and view your active devices.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-gray">All roles</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>Change your password under <strong>Security</strong></span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Enable email notifications for leave and expense updates</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>View and revoke active sessions (trusted devices)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-card-head">
+      <div class="module-icon" style="background:#f0fdf4;">💳</div>
+      <div>
+        <h3>Billing &amp; Plans</h3>
+        <p>Manage your subscription, view invoice history, and upgrade your plan.</p>
+      </div>
+    </div>
+    <div class="module-card-body">
+      <div>
+        <div class="access-label">Who can access</div>
+        <div class="access-row" style="margin-top:.3rem">
+          <span class="chip chip-purple">HR Admin only</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="action-item"><div class="action-bullet"></div><span>View current plan, seat count, and billing cycle</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Download past invoices</span></div>
+        <div class="action-item"><div class="action-bullet"></div><span>Upgrade or downgrade the plan (Razorpay-powered)</span></div>
+      </div>
+      <div class="tip tip-warn"><span class="tip-icon">⚠️</span>Use test card 4111 1111 1111 1111 in sandbox mode. Switch to live keys before going to production.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════ QUICK REFERENCE ══════════════ -->
+<div id="quickref" class="section-hdr">
+  <div class="section-num">16</div>
+  <h2>Quick Reference</h2>
+  <div class="section-line"></div>
+</div>
+
+<div class="quick-wrap">
+  <table class="quick-table">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Where to go</th>
+        <th>Who</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Post a new job opening</td><td>Recruitment → New Opening</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>Hire an applicant</td><td>Recruitment → [Applicant] → Hire</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>Share temp password with new hire</td><td>Shown in the Hire success toast</td><td>HR Admin</td></tr>
+      <tr><td>Check onboarding progress</td><td>Onboarding → expand employee row</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>Employee completes onboarding tasks</td><td>My Onboarding (employee sidebar)</td><td>Employee</td></tr>
+      <tr><td>Seed default training programs</td><td>Training → All Programs → Seed Default Programs</td><td>HR Admin</td></tr>
+      <tr><td>See who completed training</td><td>Training → All Programs → View Enrollments</td><td>HR Admin</td></tr>
+      <tr><td>Employee marks training complete</td><td>Training → My Training → Mark Complete</td><td>Employee</td></tr>
+      <tr><td>View talent pipeline kanban</td><td>Talent Pipeline (sidebar)</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>Run monthly payroll</td><td>Payroll → New Run</td><td>HR Admin / Payroll Officer</td></tr>
+      <tr><td>Employee views payslip</td><td>My Payslips (sidebar)</td><td>Employee</td></tr>
+      <tr><td>Approve a leave request</td><td>Leaves → filter by pending</td><td>HR Manager / HR Admin</td></tr>
+      <tr><td>Approve an expense claim</td><td>Expenses → Manager Approve / Finance Approve</td><td>HR Manager / Finance Auditor</td></tr>
+      <tr><td>Start a performance review cycle</td><td>Performance → New Review</td><td>HR Admin</td></tr>
+      <tr><td>Approve a salary increment</td><td>Performance → Comp Approvals</td><td>HR Admin (different person from initiator)</td></tr>
+      <tr><td>Initiate an employee's separation</td><td>Separation → Initiate Separation → search name</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>View burnout risk scores</td><td>Burnout AI (sidebar)</td><td>HR Admin / HR Manager</td></tr>
+      <tr><td>Change company logo / brand</td><td>HR Settings → Branding</td><td>HR Admin</td></tr>
+      <tr><td>Reset an employee's password</td><td>Employees → [Employee] → Reset Password</td><td>HR Admin</td></tr>
+      <tr><td>Employee changes their own password</td><td>Settings → Security</td><td>Employee</td></tr>
+      <tr><td>Compute India income tax</td><td>My Tax Studio → enter investments → compare regimes</td><td>Employee</td></tr>
+      <tr><td>View audit logs</td><td>Compliance → Audit Logs</td><td>HR Admin / Compliance Officer</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ EMPLOYEE FIRST-LOGIN ══════════════ -->
+<div class="section-hdr">
+  <div class="section-num">17</div>
+  <h2>Employee — First Login Checklist</h2>
+  <div class="section-line"></div>
+</div>
+
+<div class="module-grid" style="margin-bottom:2rem">
+  <div class="module-card" style="grid-column: 1 / -1">
+    <div class="module-card-body" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; padding:1.3rem">
+      <div>
+        <div class="workflow-title" style="margin-bottom:.5rem">Step 1 — Login</div>
+        <div class="step"><div class="step-num">→</div><span>Use the temp password <strong>Welcome@XXXX</strong> shared by HR</span></div>
+        <div class="step" style="margin-top:.3rem"><div class="step-num">→</div><span>Go to <strong>Settings → Security</strong> and set a new password immediately</span></div>
+      </div>
+      <div>
+        <div class="workflow-title" style="margin-bottom:.5rem">Step 2 — Profile</div>
+        <div class="step"><div class="step-num">→</div><span>Go to <strong>My Profile</strong> and verify your details are correct</span></div>
+        <div class="step" style="margin-top:.3rem"><div class="step-num">→</div><span>Update mobile number and emergency contact if needed</span></div>
+      </div>
+      <div>
+        <div class="workflow-title" style="margin-bottom:.5rem">Step 3 — Onboarding</div>
+        <div class="step"><div class="step-num">→</div><span>Go to <strong>My Onboarding</strong> in the sidebar</span></div>
+        <div class="step" style="margin-top:.3rem"><div class="step-num">→</div><span>Complete all tasks assigned to you — others (IT, HR) will complete theirs separately</span></div>
+      </div>
+      <div>
+        <div class="workflow-title" style="margin-bottom:.5rem">Step 4 — Training</div>
+        <div class="step"><div class="step-num">→</div><span>Once onboarding is 100% done, go to <strong>Training → My Training</strong></span></div>
+        <div class="step" style="margin-top:.3rem"><div class="step-num">→</div><span>Complete all mandatory programs and click <strong>Mark Complete</strong> on each</span></div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.3rem 1.1rem; border-top: 1px solid var(--gray-3)">
+      <div class="tip tip-success"><span class="tip-icon">🎉</span>After completing all mandatory training, your status automatically becomes <strong>Active</strong> and you appear in the Fully Ramped column of the Talent Pipeline — you are now fully onboarded!</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .page -->
+
+<footer>
+  <p>HRMS Pro — Tenant Guide &nbsp;·&nbsp; For support, contact your HR Admin or raise a ticket &nbsp;·&nbsp; Data is AES-256-GCM encrypted at rest and in transit</p>
+</footer>
+
+</body>
+</html>

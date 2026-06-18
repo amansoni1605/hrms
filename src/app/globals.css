@@ -918,6 +918,73 @@ html.dark .custom-scroll:hover::-webkit-scrollbar-thumb {
   }
 }
 
+/* ── react-day-picker theme ─────────────────────────────────────────────────── */
+.hrms-rdp {
+  --rdp-accent-color:            var(--color-vr-blue-6);
+  --rdp-accent-background-color: var(--color-vr-blue-1);
+  --rdp-today-color:             var(--color-vr-blue-6);
+  --rdp-day-height:              3.6rem;
+  --rdp-day-width:               3.6rem;
+  --rdp-day_button-height:       3.2rem;
+  --rdp-day_button-width:        3.2rem;
+  --rdp-day_button-border-radius: 0.8rem;
+  font-family: var(--font-in-rg);
+  font-size:   var(--text-fs-13);
+  color:       var(--color-neutral-10);
+}
+
+/* Trigger button — displayed like hrms-input but flex-row */
+.hrms-datepicker-trigger {
+  display:     flex;
+  align-items: center;
+  gap:         0.8rem;
+  cursor:      pointer;
+  text-align:  left;
+  width:       100%;
+}
+.hrms-datepicker-trigger:disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* Floating popover */
+.hrms-datepicker-popover {
+  position:           absolute;
+  top:                calc(100% + 6px);
+  left:               0;
+  z-index:            200;
+  background:         rgba(255, 255, 255, 0.97);
+  backdrop-filter:    blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border:             1px solid var(--color-stroke);
+  border-radius:      var(--radius-2xl);
+  box-shadow:         0 16px 48px rgba(0, 0, 0, 0.12);
+  padding:            0.6rem;
+}
+
+/* Dark mode adjustments */
+html.dark .hrms-rdp {
+  --rdp-accent-background-color: rgba(37, 99, 235, 0.15);
+  color: var(--color-neutral-10);
+}
+html.dark .hrms-datepicker-popover {
+  background:   rgba(22, 27, 40, 0.97);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:   0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+/* Heatmap variant — full-width, no border on day buttons */
+.hrms-heatmap-rdp {
+  width: 100%;
+}
+.hrms-heatmap-rdp .rdp-month { width: 100%; }
+.hrms-heatmap-rdp .rdp-month_grid { width: 100%; }
+.hrms-heatmap-rdp .rdp-day { width: auto; flex: 1; }
+.hrms-heatmap-rdp .rdp-day_button {
+  width:         100%;
+  border-radius: 0.6rem;
+  border:        1px solid var(--color-stroke);
+  position:      relative;
+}
+html.dark .hrms-heatmap-rdp .rdp-day_button { border-color: var(--color-stroke); }
+
 @media (max-width: 480px) {
   .sim-bezel       { width: min(300px, 92vw) !important; }
   .sim-bezel-inner { height: 580px !important; }

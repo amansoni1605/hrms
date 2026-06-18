@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent, type ChangeEvent } from 'react';
 import { Target, Loader2, ChevronRight, ChevronLeft, Sliders } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
-import { useToast } from '@/components/ui/Toast';
+import { Modal }      from '@/components/ui/Modal';
+import { useToast }   from '@/components/ui/Toast';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export interface CycleCreateModalProps {
   open:       boolean;
@@ -329,24 +330,19 @@ export function CycleCreateModal({ open, onClose, onCreated }: CycleCreateModalP
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
               <div>
                 <label style={labelStyle}>Start date *</label>
-                <input
-                  className="hrms-input"
-                  style={inputStyle}
-                  type="date"
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
+                  onChange={setStartDate}
+                  style={inputStyle}
                 />
               </div>
               <div>
                 <label style={labelStyle}>End date *</label>
-                <input
-                  className="hrms-input"
-                  style={inputStyle}
-                  type="date"
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
+                  min={startDate}
+                  onChange={setEndDate}
+                  style={inputStyle}
                 />
               </div>
             </div>

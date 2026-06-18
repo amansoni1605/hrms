@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Loader2 }    from 'lucide-react';
+import { DatePicker }       from '@/components/ui/DatePicker';
 import { StatusBadge }      from '@/components/ui/Badge';
 import { StatCard }         from '@/components/ui/StatCard';
 import { FileUpload }       from '@/components/ui/FileUpload';
@@ -158,11 +159,11 @@ export default function MyLeavesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
             <div>
               <label className="hrms-section-label" style={{ display: 'block', marginBottom: 4 }}>Start Date</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="hrms-input" />
+              <DatePicker value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
             </div>
             <div>
               <label className="hrms-section-label" style={{ display: 'block', marginBottom: 4 }}>End Date</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="hrms-input" />
+              <DatePicker value={form.endDate} min={form.startDate} onChange={(v) => setForm({ ...form, endDate: v })} />
             </div>
           </div>
           <div>

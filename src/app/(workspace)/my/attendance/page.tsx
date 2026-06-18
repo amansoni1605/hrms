@@ -10,6 +10,7 @@ import {
   CalendarDays, LogOut,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 // ── date-fns localizer ────────────────────────────────────────────────────────
 const locales   = { 'en-IN': enIN };
@@ -87,7 +88,7 @@ const REG_STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }
 };
 
 function fmtDate(d: string) {
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return format(new Date(d + 'T00:00:00'), 'd MMM');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ function AttendanceEvent({ event }: EventProps<CalEvent>) {
   if (!status) return null;
   const s = STATUS_STYLE[status];
   const timeStr = checkIn
-    ? new Date(checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+    ? format(new Date(checkIn), 'HH:mm')
     : null;
 
   return (
@@ -247,20 +248,18 @@ function ApplyLeaveModal({
     }
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = format(new Date(), 'yyyy-MM-dd');
 
   return (
     <Modal onClose={onClose} title="Apply for Leave" icon={<CalendarDays size={15} style={{ color: '#D97706' }} />}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
         <div>
           <FieldLabel>Start Date</FieldLabel>
-          <input type="date" value={start} min={today} onChange={(e) => { setStart(e.target.value); if (e.target.value > end) setEnd(e.target.value); }}
-            className="hrms-input" style={{ width: '100%' }} />
+          <DatePicker value={start} min={today} onChange={(v) => { setStart(v); if (v > end) setEnd(v); }} />
         </div>
         <div>
           <FieldLabel>End Date</FieldLabel>
-          <input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)}
-            className="hrms-input" style={{ width: '100%' }} />
+          <DatePicker value={end} min={start} onChange={setEnd} />
         </div>
       </div>
       <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 6, padding: '0.5rem 0.9rem', fontSize: 12, color: '#15803D', fontWeight: 600 }}>
@@ -347,11 +346,11 @@ function DayDetailPanel({
   onApplyLeave: () => void;
   onClose:    () => void;
 }) {
-  const today   = new Date().toISOString().slice(0, 10);
+  const today   = format(new Date(), 'yyyy-MM-dd');
   const isFuture = dateStr > today;
 
   const fmt = (v: Date | null | undefined) =>
-    v ? new Date(v).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+    v ? format(new Date(v), 'HH:mm') : '—';
 
   return (
     <div style={{
@@ -362,7 +361,7 @@ function DayDetailPanel({
         style={{ width: 320, padding: '1.4rem', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h4 style={{ margin: 0, fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-14)', color: 'var(--color-neutral-10)' }}>
-            {new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}
+            {format(new Date(dateStr + 'T00:00:00'), 'EEE, d MMMM')}
           </h4>
           <button onClick={onClose} className="hrms-btn-ghost" style={{ padding: '0.25rem' }}><X size={13} /></button>
         </div>
@@ -484,14 +483,14 @@ export default function MyAttendancePage() {
   const holidayMap   = useMemo(() => new Map(holidays.map((h) => [h.date, h])), [holidays]);
 
   const calEvents = useMemo<CalEvent[]>(() => {
-    const today  = new Date().toISOString().slice(0, 10);
+    const today  = format(new Date(), 'yyyy-MM-dd');
     const events: CalEvent[] = [];
 
     for (const d of summary) {
       const dateStr = d.date.slice(0, 10);
       if (dateStr > today) continue;
       events.push({
-        title: `${d.status.replace('_', ' ')}${d.checkIn ? ` · ${new Date(d.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`,
+        title: `${d.status.replace('_', ' ')}${d.checkIn ? ` · ${format(new Date(d.checkIn), 'HH:mm')}` : ''}`,
         start: new Date(dateStr + 'T00:00:00'),
         end:   new Date(dateStr + 'T23:59:59'),
         resource: { kind: 'attendance', status: d.status, dateStr, hours: d.hours, checkIn: d.checkIn as Date | null | undefined, checkOut: d.checkOut as Date | null | undefined },
@@ -563,9 +562,9 @@ export default function MyAttendancePage() {
   const detailPending = detailDate ? pendingDates.has(detailDate) : false;
 
   const fmt = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+    iso ? format(new Date(iso), 'HH:mm') : '—';
 
-  const todayDate     = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayDate     = format(now, 'EEEE, d MMMM');
   const attendancePct = stats ? Math.round((stats.presentDays + (stats.halfDays ?? 0) * 0.5) / Math.max(1, stats.days) * 100) : 0;
   const pendingCount  = requests.filter((r) => r.status === 'pending').length;
 
@@ -738,7 +737,7 @@ export default function MyAttendancePage() {
                 const s = REG_STATUS_STYLE[r.status]!;
                 return (
                   <tr key={r._id} style={{ borderBottom: '1px solid var(--color-stroke)' }}>
-                    <td className="hrms-td">{new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td className="hrms-td">{format(new Date(r.date + 'T00:00:00'), 'd MMM yyyy')}</td>
                     <td className="hrms-td">{fmt(r.requestedCheckIn)}</td>
                     <td className="hrms-td">{r.requestedCheckOut ? fmt(r.requestedCheckOut) : '—'}</td>
                     <td className="hrms-td" style={{ maxWidth: 220 }}>

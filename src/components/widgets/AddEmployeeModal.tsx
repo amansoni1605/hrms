@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { UserPlus, Loader2, AlertCircle, CheckCircle, Search, X, Building2, CalendarDays } from 'lucide-react';
-import { Modal }   from '@/components/ui/Modal';
-import { useToast } from '@/components/ui/Toast';
+import { Modal }      from '@/components/ui/Modal';
+import { useToast }   from '@/components/ui/Toast';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AddEmployeeModal — multi-step form to onboard a new employee.
@@ -291,8 +292,7 @@ export function AddEmployeeModal({ open, onClose, onCreated }: AddEmployeeModalP
                          className="hrms-input" placeholder="+1-555-0000000" />
                 </Field>
                 <Field label="Date of Birth" error={errors.dateOfBirth}>
-                  <input type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)}
-                         className="hrms-input" />
+                  <DatePicker value={form.dateOfBirth} max={new Date(Date.now() - 18 * 365.25 * 86400000).toISOString().slice(0,10)} onChange={(v) => set('dateOfBirth', v)} />
                 </Field>
               </div>
               <Field label="Personal Email" error={errors.personalEmail}>
@@ -328,8 +328,7 @@ export function AddEmployeeModal({ open, onClose, onCreated }: AddEmployeeModalP
                   </select>
                 </Field>
                 <Field label="Hire Date *" error={errors.hireDate}>
-                  <input type="date" value={form.hireDate} onChange={(e) => set('hireDate', e.target.value)}
-                         className="hrms-input" />
+                  <DatePicker value={form.hireDate} onChange={(v) => set('hireDate', v)} />
                 </Field>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>

@@ -8,6 +8,8 @@ import {
   Users, Calendar as CalendarIcon, FilePen, CheckCircle, XCircle, X,
   Search, ChevronLeft, ChevronRight, Loader2,
 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { fmtTime } from '@/lib/format';
 
 // ── date-fns localizer ────────────────────────────────────────────────────────
 const locales   = { 'en-IN': enIN };
@@ -64,7 +66,7 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = 
 };
 
 function toDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return format(d, 'yyyy-MM-dd');
 }
 
 // ── Reject Dialog ────────────────────────────────────────────────────────────
@@ -127,8 +129,7 @@ function RegularizationsPanel() {
     setActing(null); setRejectId(null); load();
   };
 
-  const fmt = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmt = (iso: string | null) => fmtTime(iso);
 
   const TAB_STYLE = (active: boolean) => ({
     padding: '0.5rem 1.2rem', borderRadius: 99, fontSize: 'var(--text-fs-12)',
@@ -174,7 +175,7 @@ function RegularizationsPanel() {
                     <span style={{ display: 'block', fontSize: 10, color: 'var(--color-neutral-6)' }}>{r.employee.code} · {r.employee.title}</span>
                   </td>
                   <td className="hrms-td" style={{ whiteSpace: 'nowrap' }}>
-                    {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {format(new Date(r.date + 'T00:00:00'), 'd MMM yyyy')}
                   </td>
                   <td className="hrms-td">{fmt(r.requestedCheckIn)}</td>
                   <td className="hrms-td">{r.requestedCheckOut ? fmt(r.requestedCheckOut) : '—'}</td>
@@ -252,8 +253,7 @@ function AttendanceRegister() {
     absent:   rows.filter((r) => r.status === 'absent').length,
   };
 
-  const fmt = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmt = (iso: string | null) => fmtTime(iso);
 
   const shiftDate = (delta: number) => {
     const d = new Date(date); d.setDate(d.getDate() + delta);
@@ -266,8 +266,7 @@ function AttendanceRegister() {
         <p style={{ margin: 0, color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)' }}>{total} employees</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
           <button onClick={() => shiftDate(-1)} className="hrms-btn-ghost" style={{ padding: '0.5rem' }}><ChevronLeft size={16} /></button>
-          <input type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(1); }}
-            className="hrms-input" style={{ width: 150 }} />
+          <DatePicker value={date} onChange={(v) => { setDate(v); setPage(1); }} style={{ width: 160 }} />
           <button onClick={() => shiftDate(1)} className="hrms-btn-ghost" style={{ padding: '0.5rem' }}><ChevronRight size={16} /></button>
         </div>
       </div>

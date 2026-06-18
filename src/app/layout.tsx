@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ToastProvider }   from '@/components/ui/Toast';
 import { ThemeProvider }   from '@/components/shell/ThemeProvider';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-day-picker/style.css';
 import './globals.css';
 
 const inter = Inter({

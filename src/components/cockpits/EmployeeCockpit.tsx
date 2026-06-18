@@ -10,6 +10,7 @@ import {
 import { StatCard }             from '@/components/ui/StatCard';
 import { StatusBadge, Badge }   from '@/components/ui/Badge';
 import { formatDate, formatCurrency } from '@/lib/utils';
+import { DatePicker }           from '@/components/ui/DatePicker';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -411,8 +412,8 @@ function LeaveBalanceCard({ balance, leaves, onRefresh }: {
             <option value="compensatory">Compensatory</option>
           </select>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="hrms-input" />
-            <input type="date" value={form.endDate}   onChange={(e) => setForm({ ...form, endDate:   e.target.value })} className="hrms-input" />
+            <DatePicker value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
+            <DatePicker value={form.endDate}   min={form.startDate} onChange={(v) => setForm({ ...form, endDate: v })} />
           </div>
           <textarea
             value={form.reason}

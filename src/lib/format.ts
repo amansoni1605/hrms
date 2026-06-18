@@ -3,6 +3,27 @@
 
 export { formatCurrency, formatDate, getInitials, cn } from './utils';
 
+import { format, isValid } from 'date-fns';
+
+/** Format a date value as a human-readable date string. Default: "15 Jun 2026" */
+export function fmtDate(d: Date | string | null | undefined, pattern = 'd MMM yyyy'): string {
+  if (!d) return '—';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return isValid(date) ? format(date, pattern) : '—';
+}
+
+/** Format a date value as a time string. Default: "09:30" (24-hour) */
+export function fmtTime(d: Date | string | null | undefined, pattern = 'HH:mm'): string {
+  if (!d) return '—';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return isValid(date) ? format(date, pattern) : '—';
+}
+
+/** Today as a YYYY-MM-DD string, suitable for date input values. */
+export function todayStr(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}
+
 export function formatNumber(value: number, locale = 'en-US'): string {
   return new Intl.NumberFormat(locale).format(value);
 }

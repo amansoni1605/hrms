@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Loader2, LogOut, CheckSquare, Square, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { useToast } from '@/components/ui/Toast';
+import { useToast }   from '@/components/ui/Toast';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface FnF { pendingSalary: number; leaveEncashment: number; gratuity: number; advanceDeductions: number; totalPayable: number; status: string; }
 interface OffboardTask { _id?: string; task: string; assignedTo: string; status: string; }
@@ -169,8 +170,8 @@ export default function SeparationPage() {
                 {SEP_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
               </select>
             </SF>
-            <SF label="Notice Date"><input type="date" value={form.noticeDate} onChange={(e) => setForm({ ...form, noticeDate: e.target.value })} className="hrms-input" /></SF>
-            <SF label="Last Working Day"><input type="date" value={form.lastWorkingDay} onChange={(e) => setForm({ ...form, lastWorkingDay: e.target.value })} className="hrms-input" /></SF>
+            <SF label="Notice Date"><DatePicker value={form.noticeDate} onChange={(v) => setForm({ ...form, noticeDate: v })} /></SF>
+            <SF label="Last Working Day"><DatePicker value={form.lastWorkingDay} min={form.noticeDate} onChange={(v) => setForm({ ...form, lastWorkingDay: v })} /></SF>
           </div>
           <SF label="Notes"><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="hrms-input" rows={2} style={{ width: '100%' }} /></SF>
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', justifyContent: 'flex-end' }}>

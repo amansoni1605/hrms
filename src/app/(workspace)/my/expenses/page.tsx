@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Loader2, Receipt, Trash2, Send, ChevronDown, ChevronUp } from 'lucide-react';
-import { useToast } from '@/components/ui/Toast';
+import { useToast }   from '@/components/ui/Toast';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface ExpenseItem { date: string; expenseType: string; amount: number; description: string; }
 interface ExpenseClaim {
@@ -92,7 +93,7 @@ export default function MyExpensesPage() {
           <h3 style={{ margin: '0 0 1.2rem', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)', color: 'var(--color-neutral-10)' }}>New Expense Claim</h3>
           {items.map((item, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 120px 1fr 36px', gap: '0.6rem', marginBottom: '0.6rem', alignItems: 'end' }}>
-              <div><label style={labelStyle}>Date</label><input type="date" value={item.date} onChange={(e) => patchItem(i, 'date', e.target.value)} className="hrms-input" /></div>
+              <div><label style={labelStyle}>Date</label><DatePicker value={item.date} onChange={(v) => patchItem(i, 'date', v)} /></div>
               <div><label style={labelStyle}>Type</label>
                 <select value={item.expenseType} onChange={(e) => patchItem(i, 'expenseType', e.target.value)} className="hrms-input">
                   {EXPENSE_TYPES.map((t) => <option key={t}>{t}</option>)}

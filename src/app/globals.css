@@ -115,7 +115,7 @@
   /* ── Core surface tokens ──────────────────────────────────────────────── */
   --color-stroke:      #E5EAF1;
   --color-narco-black: rgba(0, 0, 0, 0.14);
-  --color-ghost-white: #FCFBFF;
+  --color-ghost-white: #F8FAFC;
   --color-background:  var(--color-ghost-white);
   --color-foreground:  var(--color-neutral-10);
 
@@ -277,11 +277,18 @@
 /* ── HRMS atomic surface classes ─────────────────────────────────────────────── */
 
 .hrms-card {
-  background:    var(--color-neutral-1);
-  border:        1px solid var(--color-stroke);
-  border-radius: var(--radius-lg);
-  box-shadow:    var(--shadow-card);
-  padding:       1.6rem;
+  background:              rgba(255, 255, 255, 0.80);
+  backdrop-filter:         blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border:                  1px solid rgba(255, 255, 255, 0.90);
+  border-radius:           var(--radius-3xl);
+  box-shadow:              0 8px 30px rgb(0 0 0 / 0.04);
+  padding:                 1.6rem;
+  transition:              transform 300ms ease, box-shadow 300ms ease;
+}
+.hrms-card:hover {
+  transform:  translateY(-4px);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.08);
 }
 
 .hrms-section-label {
@@ -336,14 +343,24 @@
 /* Buttons */
 .hrms-btn-primary {
   display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.6rem; padding: 0.8rem 1.6rem;
+  gap: 0.6rem; padding: 0.9rem 1.8rem;
   background: var(--color-vr-blue-6); color: var(--color-neutral-1);
   font-family: var(--font-in-sb); font-size: var(--text-fs-14); font-weight: 600;
-  border-radius: var(--radius-md); border: none; cursor: pointer;
-  transition: background 150ms ease, opacity 150ms ease; white-space: nowrap;
+  border-radius: var(--radius-xl); border: none; cursor: pointer; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(28, 80, 157, 0.30);
+  transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease, opacity 150ms ease;
 }
-.hrms-btn-primary:hover    { background: var(--color-vr-blue-7); }
-.hrms-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.hrms-btn-primary:hover {
+  background:  var(--color-vr-blue-7);
+  transform:   translateY(-2px);
+  box-shadow:  0 6px 20px rgba(28, 80, 157, 0.50);
+}
+.hrms-btn-primary:active   { transform: scale(0.95); }
+.hrms-btn-primary:focus    {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(28, 80, 157, 0.35), 0 4px 14px rgba(28, 80, 157, 0.30);
+}
+.hrms-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .hrms-btn-ghost {
   display: inline-flex; align-items: center; justify-content: center;
@@ -372,8 +389,18 @@
 
 /* KPI stat card */
 .hrms-kpi-card {
-  background: var(--color-neutral-1); border: 1px solid var(--color-stroke);
-  border-radius: var(--radius-lg); padding: 1.6rem; box-shadow: var(--shadow-card);
+  background:              rgba(255, 255, 255, 0.80);
+  backdrop-filter:         blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border:                  1px solid rgba(255, 255, 255, 0.90);
+  border-radius:           var(--radius-3xl);
+  box-shadow:              0 8px 30px rgb(0 0 0 / 0.04);
+  padding:                 1.6rem;
+  transition:              transform 300ms ease, box-shadow 300ms ease;
+}
+.hrms-kpi-card:hover {
+  transform:  translateY(-4px);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.08);
 }
 .hrms-kpi-card__label {
   color: var(--color-neutral-7); font-family: var(--font-in-rg); font-size: var(--text-fs-12);
@@ -639,6 +666,85 @@
   .sim-grid { grid-template-columns: 1fr !important; }
 }
 
+/* ── Glassmorphism top bar ───────────────────────────────────────────────────── */
+.hrms-topbar {
+  background:              rgba(255, 255, 255, 0.70);
+  backdrop-filter:         blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom:           1px solid var(--color-stroke);
+}
+
+/* ── Hero / Welcome bento card ───────────────────────────────────────────────── */
+.hrms-hero-card {
+  position:      relative;
+  overflow:      hidden;
+  background:    linear-gradient(135deg, #2563EB 0%, #4338CA 50%, #7C3AED 100%);
+  border:        1px solid rgba(255, 255, 255, 0.20);
+  border-radius: var(--radius-3xl);
+  box-shadow:    0 8px 30px rgb(0 0 0 / 0.10);
+  padding:       2.4rem;
+  transition:    transform 300ms ease, box-shadow 300ms ease;
+  color:         white;
+}
+.hrms-hero-card:hover    { transform: translateY(-4px); box-shadow: 0 12px 40px rgb(0 0 0 / 0.16); }
+.hrms-hero-card__muted   { color: rgba(191, 219, 254, 0.90); }   /* blue-100/90 */
+
+/* Decorative floating orbs (place as absolute divs inside .hrms-hero-card) */
+.hrms-orb {
+  position:      absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hrms-orb--white {
+  background: white;
+  opacity:    0.10;
+  filter:     blur(48px);
+  width:      16rem; height: 16rem;
+  top: -4rem; right: -4rem;
+}
+.hrms-orb--purple {
+  background: #C084FC;   /* purple-400 */
+  opacity:    0.20;
+  filter:     blur(32px);
+  width:      12rem; height: 12rem;
+  bottom: -2rem; left: 2rem;
+}
+
+/* ── Bento grid layout ───────────────────────────────────────────────────────── */
+.hrms-bento-grid {
+  display:               grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap:                   2.4rem;
+}
+@media (min-width: 768px) {
+  .hrms-bento-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .hrms-bento-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.bento-span-2 { grid-column: span 2; }
+.bento-span-3 { grid-column: span 3; }
+.bento-span-4 { grid-column: span 4; }
+
+/* ── Fade-in-up animation + stagger utilities ────────────────────────────────── */
+@keyframes fade-in-up {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0);    }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stagger delays — apply alongside .animate-fade-in-up */
+.anim-delay-0   { animation-delay:   0ms; }
+.anim-delay-75  { animation-delay:  75ms; }
+.anim-delay-150 { animation-delay: 150ms; }
+.anim-delay-225 { animation-delay: 225ms; }
+.anim-delay-300 { animation-delay: 300ms; }
+.anim-delay-400 { animation-delay: 400ms; }
+.anim-delay-500 { animation-delay: 500ms; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    DARK MODE — token overrides
    Toggled by adding class="dark" to <html>.
@@ -658,7 +764,7 @@ html.dark {
   --color-neutral-3:  #212A42;   /* input bg / hover           */
   --color-neutral-4:  #283252;   /* stronger tint              */
   --color-neutral-5:  #334068;   /* divider lines              */
-  --color-neutral-6:  #627090;   /* muted icon / label         */
+  --color-neutral-6:  #8090B0;   /* muted icon / label         */
   --color-neutral-7:  #8A9AB8;   /* secondary text             */
   --color-neutral-8:  #B8C4DE;   /* body text                  */
   --color-neutral-9:  #CDD8F0;   /* strong body text           */
@@ -694,6 +800,26 @@ html.dark {
   --color-table-red-1:    #3D1414;
   --color-table-red-2:    #4A1818;
 }
+
+/* ── Glassmorphism surface overrides ───────────────────────────────────────── */
+html.dark .hrms-card,
+html.dark .hrms-kpi-card {
+  background:   rgba(22, 27, 40, 0.85);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+html.dark .hrms-topbar {
+  background:   rgba(13, 17, 23, 0.85);
+  border-color: var(--color-stroke);
+}
+
+/* ── Badge / pill dark-mode contrast overrides ─────────────────────────────── */
+html.dark .hrms-badge--success { color: #6DCF96; background: rgba(17,160,74,0.15); }
+html.dark .hrms-badge--warning { color: #FFB547; background: rgba(255,165,0,0.15); }
+html.dark .hrms-badge--danger  { color: #FF7070; background: rgba(238,0,0,0.12); }
+html.dark .hrms-badge--info    { color: #93B8F0; background: rgba(65,105,225,0.15); }
+
+html.dark .gain_pill { color: #6DCF96; background-color: rgba(17,160,74,0.15); }
+html.dark .loss_pill { color: #FF7070; background-color: rgba(238,0,0,0.12); }
 
 /* ── react-big-calendar dark overrides ─────────────────────────────────────
    Base RBC rules use !important; these must do the same to win.           */

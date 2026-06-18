@@ -297,23 +297,60 @@ export function HRCommandCenter() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', overflow: 'scroll' }}>
       <div style={{ padding: '2rem 2rem 0 2rem' }}>
+
+        {/* Hero banner */}
+        <div className="hrms-hero-card bento-span-4 animate-fade-in-up anim-delay-0" style={{ marginBottom: '1.6rem' }}>
+          <div className="hrms-orb hrms-orb--white" />
+          <div className="hrms-orb hrms-orb--purple" />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <h1 style={{
+              margin: 0,
+              color: '#ffffff',
+              fontFamily: 'var(--font-jk-bd)',
+              fontWeight: 700,
+              fontSize: 'var(--text-fs-28)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+            }}>
+              HR Command Center
+            </h1>
+            <p style={{
+              margin: 0,
+              marginTop: '0.4rem',
+              color: 'rgba(255,255,255,0.72)',
+              fontSize: 'var(--text-fs-14)',
+              fontFamily: 'var(--font-in-rg)',
+            }}>
+              Your workforce at a glance
+            </p>
+          </div>
+        </div>
+
         {/* KPI strip */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '1.2rem', marginBottom: '1.6rem',
-        }}>
-          <StatCard title="Total Employees" value={s?.totalEmployees    ?? '—'} icon={Users}        accent="blue"   />
-          <StatCard title="Active"          value={s?.activeEmployees   ?? '—'} icon={CheckSquare}  accent="green"  />
-          <StatCard title="On Leave"        value={s?.onLeave           ?? '—'} icon={Globe}        accent="amber"  />
-          <StatCard title="Pending Leaves"  value={s?.pendingLeaves     ?? '—'} icon={AlertTriangle} accent="amber" />
-          <StatCard title="Departments"     value={s?.departments       ?? '—'} icon={BarChart3}    accent="purple" />
-          <StatCard title="Latest Payroll"  value={formatCurrency(s?.latestPayrollTotal ?? 0)} icon={DollarSign} accent="cyan" />
+        <div className="hrms-bento-grid" style={{ marginBottom: '1.6rem' }}>
+          <div className="animate-fade-in-up anim-delay-0">
+            <StatCard title="Total Employees" value={s?.totalEmployees    ?? '—'} icon={Users}        accent="blue"   />
+          </div>
+          <div className="animate-fade-in-up anim-delay-75">
+            <StatCard title="Active"          value={s?.activeEmployees   ?? '—'} icon={CheckSquare}  accent="green"  />
+          </div>
+          <div className="animate-fade-in-up anim-delay-150">
+            <StatCard title="On Leave"        value={s?.onLeave           ?? '—'} icon={Globe}        accent="amber"  />
+          </div>
+          <div className="animate-fade-in-up anim-delay-225">
+            <StatCard title="Pending Leaves"  value={s?.pendingLeaves     ?? '—'} icon={AlertTriangle} accent="amber" />
+          </div>
+          <div className="animate-fade-in-up anim-delay-225">
+            <StatCard title="Departments"     value={s?.departments       ?? '—'} icon={BarChart3}    accent="purple" />
+          </div>
+          <div className="animate-fade-in-up anim-delay-225">
+            <StatCard title="Latest Payroll"  value={formatCurrency(s?.latestPayrollTotal ?? 0)} icon={DollarSign} accent="cyan" />
+          </div>
         </div>
 
         {/* Charts row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.2rem', marginBottom: '1.6rem' }}>
-          <div className="hrms-card" style={{ padding: '1.6rem' }}>
+        <div className="hrms-bento-grid" style={{ marginBottom: '1.6rem' }}>
+          <div className="hrms-card bento-span-2 animate-fade-in-up anim-delay-150" style={{ padding: '1.6rem' }}>
             <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Department Headcount & Burnout</h3>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={analytics?.departmentMetrics ?? []} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
@@ -334,7 +371,7 @@ export function HRCommandCenter() {
             </ResponsiveContainer>
           </div>
 
-          <div className="hrms-card" style={{ padding: '1.6rem' }}>
+          <div className="hrms-card animate-fade-in-up anim-delay-225" style={{ padding: '1.6rem' }}>
             <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Risk Distribution</h3>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -427,7 +464,7 @@ export function HRCommandCenter() {
       />
 
       {/* Virtualized grid */}
-      <div style={{ flex: 1, minHeight: 400, padding: '0 2rem 1.6rem 2rem' }}>
+      <div className="animate-fade-in-up anim-delay-400" style={{ flex: 1, minHeight: 400, padding: '0 2rem 1.6rem 2rem' }}>
         <DataGrid
           data={employees}
           columns={columns}
@@ -460,8 +497,12 @@ export function HRCommandCenter() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '1.2rem', padding: '0 2rem 2rem 2rem', flexShrink: 0,
       }}>
-        <ComplianceMonitor metrics={analytics?.departmentMetrics ?? []} />
-        <PayrollConsole total={s?.latestPayrollTotal ?? 0} currency="USD" />
+        <div className="animate-fade-in-up anim-delay-300">
+          <ComplianceMonitor metrics={analytics?.departmentMetrics ?? []} />
+        </div>
+        <div className="animate-fade-in-up anim-delay-400">
+          <PayrollConsole total={s?.latestPayrollTotal ?? 0} currency="USD" />
+        </div>
       </div>
     </div>
   );

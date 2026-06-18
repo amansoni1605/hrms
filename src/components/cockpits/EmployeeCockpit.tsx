@@ -41,31 +41,25 @@ function MilestoneBanner({ profile, userName }: { profile: ProfileData | null; u
     : false;
 
   return (
-    <div
-      className="hrms-card"
-      style={{
-        padding: '1.6rem 2rem',
-        background: 'linear-gradient(90deg, var(--color-vr-blue-1) 0%, var(--color-neutral-1) 80%)',
-        display: 'flex', alignItems: 'center', gap: '1.4rem',
-        border: '1px solid var(--color-vr-blue-2)',
-      }}
-    >
+    <div className="hrms-hero-card bento-span-2" style={{ padding: '1.6rem 2rem', display: 'flex', alignItems: 'center', gap: '1.4rem' }}>
+      <div className="hrms-orb hrms-orb--white" />
+      <div className="hrms-orb hrms-orb--purple" />
       <div
         style={{
           width: 44, height: 44, borderRadius: '50%',
-          background: 'var(--color-neutral-1)',
+          background: 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
           boxShadow: 'var(--shadow-card)',
         }}
       >
         {isAnniversary
-          ? <Award size={20} style={{ color: 'var(--color-semantics-orange-7)' }} />
+          ? <Award size={20} style={{ color: 'var(--color-vr-blue-6)' }} />
           : <CheckCircle size={20} style={{ color: 'var(--color-vr-blue-6)' }} />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
-          margin: 0, color: 'var(--color-neutral-10)',
+          margin: 0, color: 'white',
           fontFamily: 'var(--font-jk-bd)', fontWeight: 700,
           fontSize: 'var(--text-fs-16)',
         }}>
@@ -75,10 +69,7 @@ function MilestoneBanner({ profile, userName }: { profile: ProfileData | null; u
               ? `Good Monday, ${userName.split(' ')[0]}`
               : `Welcome back, ${userName.split(' ')[0]}`}
         </p>
-        <p style={{
-          margin: 0, marginTop: 2,
-          color: 'var(--color-neutral-7)', fontSize: 'var(--text-fs-12)',
-        }}>
+        <p className="hrms-hero-card__muted" style={{ margin: 0, marginTop: 2, fontSize: 'var(--text-fs-12)' }}>
           {today.toLocaleDateString('en-US', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
           })}
@@ -86,10 +77,10 @@ function MilestoneBanner({ profile, userName }: { profile: ProfileData | null; u
       </div>
       {profile && (
         <div style={{ textAlign: 'right' }}>
-          <p style={{ margin: 0, color: 'var(--color-neutral-9)', fontSize: 'var(--text-fs-12)', fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>
+          <p style={{ margin: 0, color: 'white', fontSize: 'var(--text-fs-12)', fontFamily: 'var(--font-in-sb)', fontWeight: 600 }}>
             {profile.jobTitle}
           </p>
-          <p style={{ margin: 0, color: 'var(--color-neutral-7)', fontSize: 10, fontFamily: 'monospace' }}>
+          <p className="hrms-hero-card__muted" style={{ margin: 0, fontSize: 10, fontFamily: 'monospace' }}>
             {profile.employeeCode}
           </p>
         </div>
@@ -135,7 +126,7 @@ function PendingReviewBanner() {
   return (
     <button
       onClick={() => router.push(`/my/performance/${review._id}`)}
-      className="hrms-card"
+      className="hrms-card animate-fade-in-up"
       style={{
         padding: '1.4rem 2rem', cursor: 'pointer', textAlign: 'left',
         display: 'flex', alignItems: 'center', gap: '1.4rem',
@@ -211,7 +202,7 @@ function CheckInWidget() {
   const checkedOut = status?.checkedOut ?? false;
 
   return (
-    <div className="hrms-card" style={{ padding: '1.6rem' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-0" style={{ padding: '1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <h3 className="hrms-section-label">Attendance</h3>
         {loading
@@ -325,7 +316,7 @@ function LeaveBalanceCard({ balance, leaves, onRefresh }: {
   ];
 
   return (
-    <div className="hrms-card" style={{ padding: '1.6rem' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-75" style={{ padding: '1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
         <h3 className="hrms-section-label">Leave Balance</h3>
         <button
@@ -447,7 +438,7 @@ function LeaveBalanceCard({ balance, leaves, onRefresh }: {
 
 function PayslipsPanel({ slips }: { slips: PayslipRecord[] }) {
   return (
-    <div className="hrms-card" style={{ padding: '1.6rem' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-150" style={{ padding: '1.6rem' }}>
       <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Recent Payslips</h3>
       {slips.length === 0 ? (
         <p style={{ color: 'var(--color-neutral-7)', textAlign: 'center', padding: '1.2rem 0', fontSize: 'var(--text-fs-12)' }}>
@@ -502,7 +493,7 @@ function RiskSnapshot({ profile }: { profile: ProfileData | null }) {
   const flight  = Math.round((profile.flightRiskScore ?? 0) * 100);
 
   return (
-    <div className="hrms-card" style={{ padding: '1.6rem' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-225" style={{ padding: '1.6rem' }}>
       <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Wellbeing Snapshot</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -591,41 +582,49 @@ export function EmployeeCockpit({ userName }: EmployeeCockpitProps) {
       <PendingReviewBanner />
 
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem' }}>
-        <StatCard
-          title="Leave Remaining"
-          value={balance?.remaining ?? 0}
-          subtitle="days this year"
-          icon={Calendar}
-          accent="blue"
-        />
-        <StatCard
-          title="Pending Requests"
-          value={pendingLeaves}
-          subtitle="awaiting approval"
-          icon={AlertCircle}
-          accent="amber"
-        />
-        <StatCard
-          title="Payslips"
-          value={slips.length}
-          subtitle="on record"
-          icon={FileText}
-          accent="green"
-        />
-        <StatCard
-          title="Net Salary"
-          value={slips[0]?.netSalary != null
-            ? formatCurrency(slips[0].netSalary, slips[0].currencyCode)
-            : '—'}
-          subtitle="latest month"
-          icon={DollarSign}
-          accent="cyan"
-        />
+      <div className="hrms-bento-grid">
+        <div className="animate-fade-in-up anim-delay-0">
+          <StatCard
+            title="Leave Remaining"
+            value={balance?.remaining ?? 0}
+            subtitle="days this year"
+            icon={Calendar}
+            accent="blue"
+          />
+        </div>
+        <div className="animate-fade-in-up anim-delay-75">
+          <StatCard
+            title="Pending Requests"
+            value={pendingLeaves}
+            subtitle="awaiting approval"
+            icon={AlertCircle}
+            accent="amber"
+          />
+        </div>
+        <div className="animate-fade-in-up anim-delay-150">
+          <StatCard
+            title="Payslips"
+            value={slips.length}
+            subtitle="on record"
+            icon={FileText}
+            accent="green"
+          />
+        </div>
+        <div className="animate-fade-in-up anim-delay-225">
+          <StatCard
+            title="Net Salary"
+            value={slips[0]?.netSalary != null
+              ? formatCurrency(slips[0].netSalary, slips[0].currencyCode)
+              : '—'}
+            subtitle="latest month"
+            icon={DollarSign}
+            accent="cyan"
+          />
+        </div>
       </div>
 
       {/* Widget grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+      <div className="hrms-bento-grid">
         <CheckInWidget />
         <LeaveBalanceCard balance={balance} leaves={leaves} onRefresh={loadProfile} />
         <PayslipsPanel slips={slips} />
@@ -634,7 +633,7 @@ export function EmployeeCockpit({ userName }: EmployeeCockpitProps) {
 
       {/* Leave history */}
       {leaves.length > 0 && (
-        <div className="hrms-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="hrms-card animate-fade-in-up anim-delay-300" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{
             padding: '1rem 1.6rem',
             borderBottom: '1px solid var(--color-stroke)',

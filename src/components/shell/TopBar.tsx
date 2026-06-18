@@ -39,12 +39,11 @@ export function TopBar({ title, subtitle, role, userName }: TopBarProps) {
   return (
     <>
       <header
+        className="hrms-topbar"
         style={{
           position: 'sticky', top: 0, zIndex: 20,
           display: 'flex', alignItems: 'center', gap: '1.6rem',
           height: 56, padding: '0 2rem',
-          background: 'var(--color-neutral-1)',
-          borderBottom: '1px solid var(--color-stroke)',
           flexShrink: 0,
         }}
       >

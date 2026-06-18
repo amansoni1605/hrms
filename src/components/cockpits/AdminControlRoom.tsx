@@ -74,7 +74,7 @@ function TenantFleetGrid({
   };
 
   return (
-    <div className="hrms-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-300" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '0.6rem',
         padding: '1rem 1.6rem',
@@ -252,7 +252,7 @@ function AuditLedger() {
   useEffect(() => { load(page); }, [page]);
 
   return (
-    <div className="hrms-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-400" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '0.6rem',
         padding: '1rem 1.6rem',
@@ -359,7 +359,7 @@ function DigitalWorkerGrid() {
   }, []);
 
   return (
-    <div className="hrms-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="hrms-card animate-fade-in-up anim-delay-300" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '0.6rem',
         padding: '1rem 1.6rem',
@@ -469,43 +469,47 @@ export function AdminControlRoom() {
   return (
     <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.6rem', maxWidth: 1440 }}>
 
-      {/* Super Admin Banner */}
-      <div
-        className="hrms-card"
-        style={{
-          padding: '1.2rem 1.6rem',
-          background: 'linear-gradient(90deg, #F6EDF9 0%, var(--color-neutral-1) 80%)',
-          border: '1px solid #DAB1E4',
-          display: 'flex', alignItems: 'center', gap: '1rem',
-        }}
-      >
-        <Shield size={18} style={{ color: '#783489', flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, color: '#4C2157', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-16)' }}>
-            Super Admin Control Room
-          </p>
-          <p style={{ margin: 0, marginTop: 2, color: '#783489', fontSize: 'var(--text-fs-12)' }}>
-            Full platform access · Multi-tenant management · Immutable system audit
-          </p>
+      {/* Hero Card */}
+      <div className="hrms-hero-card bento-span-4" style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="hrms-orb hrms-orb--white" />
+        <div className="hrms-orb hrms-orb--purple" />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Shield size={22} style={{ color: '#fff', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, color: '#fff', fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 'var(--text-fs-20)' }}>
+              Admin Control Room
+            </p>
+            <p style={{ margin: 0, marginTop: 4, color: 'rgba(255,255,255,0.75)', fontSize: 'var(--text-fs-12)' }}>
+              System-wide operations
+            </p>
+          </div>
+          <Badge variant="purple" dot>Super Admin</Badge>
+          <button
+            onClick={() => setAddOpen(true)}
+            className="hrms-btn-primary"
+            style={{ padding: '0.6rem 1.2rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Plus size={13} /> New Tenant
+          </button>
         </div>
-        <Badge variant="purple" dot>Super Admin</Badge>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="hrms-btn-primary"
-          style={{ padding: '0.6rem 1.2rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
-        >
-          <Plus size={13} /> New Tenant
-        </button>
       </div>
 
       <AddTenantModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={loadTenants} />
 
       {/* Platform KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem' }}>
-        <StatCard title="Total Tenants"    value={loadingT ? '—' : totalTenants}  icon={Building2}     accent="blue"   />
-        <StatCard title="Active Tenants"   value={loadingT ? '—' : activeTenants} icon={Activity}      accent="green"  />
-        <StatCard title="Pending Setup"    value={loadingT ? '—' : pendingSetup}  icon={AlertTriangle} accent="purple" />
-        <StatCard title="Total Seats Used" value={loadingT ? '—' : totalSeats}    icon={TrendingUp}    accent="cyan"   />
+      <div className="hrms-bento-grid">
+        <div className="animate-fade-in-up anim-delay-0">
+          <StatCard title="Total Tenants"    value={loadingT ? '—' : totalTenants}  icon={Building2}     accent="blue"   />
+        </div>
+        <div className="animate-fade-in-up anim-delay-75">
+          <StatCard title="Active Tenants"   value={loadingT ? '—' : activeTenants} icon={Activity}      accent="green"  />
+        </div>
+        <div className="animate-fade-in-up anim-delay-150">
+          <StatCard title="Pending Setup"    value={loadingT ? '—' : pendingSetup}  icon={AlertTriangle} accent="purple" />
+        </div>
+        <div className="animate-fade-in-up anim-delay-225">
+          <StatCard title="Total Seats Used" value={loadingT ? '—' : totalSeats}    icon={TrendingUp}    accent="cyan"   />
+        </div>
       </div>
 
       {/* Tenant fleet — full width */}
@@ -519,9 +523,13 @@ export function AdminControlRoom() {
       />
 
       {/* Lower row: AI Workers + Audit */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.2rem' }}>
-        <DigitalWorkerGrid />
-        <AuditLedger />
+      <div className="hrms-bento-grid">
+        <div className="bento-span-2">
+          <DigitalWorkerGrid />
+        </div>
+        <div className="bento-span-2">
+          <AuditLedger />
+        </div>
       </div>
     </div>
   );

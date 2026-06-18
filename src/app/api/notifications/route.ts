@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse }        from 'next/server';
-import { withRoute }                         from '@/lib/withRoute';
-import { WorkspaceInAppNotification }        from '@/models/workspace.models';
-import mongoose                              from 'mongoose';
+import { NextRequest, NextResponse }                       from 'next/server';
+import { withRoute }                                        from '@/lib/withRoute';
+import { WorkspaceInAppNotification, WorkspaceUser }        from '@/models/workspace.models';
+import mongoose                                             from 'mongoose';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/notifications
@@ -55,13 +55,30 @@ export const POST = withRoute(async (req, session) => {
     return NextResponse.json({ error: 'type and title are required' }, { status: 400 });
   }
 
-  // If userId not supplied, notify the caller (self-notification for testing)
-  const targetUserId = body.userId
-    ? new mongoose.Types.ObjectId(body.userId)
-    : new mongoose.Types.ObjectId(session.userId);
-
   const { TenantContext } = await import('@/infrastructure/multiTenantCore');
   const ctx = TenantContext.requireStore('POST /api/notifications');
+
+  let targetUserId: mongoose.Types.ObjectId;
+
+  if (body.userId) {
+    if (!mongoose.isValidObjectId(body.userId)) {
+      return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+    }
+    const oid = new mongoose.Types.ObjectId(body.userId);
+
+    // Verify the target user belongs to this tenant before sending
+    const targetUser = await WorkspaceUser.findOne(
+      { _id: oid, tenantId: ctx.tenantId, isActive: true },
+    ).select('_id').lean();
+
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found in this tenant' }, { status: 404 });
+    }
+    targetUserId = oid;
+  } else {
+    // No userId supplied — notify the caller (self-notification / testing)
+    targetUserId = new mongoose.Types.ObjectId(session.userId);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const notif = await (WorkspaceInAppNotification as any).create({

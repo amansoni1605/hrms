@@ -15,6 +15,7 @@ import { BulkImportModal }      from '@/components/widgets/BulkImportModal';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ResponsiveContainer, Legend,
+  AreaChart, Area, LabelList, Sector,
 } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 
@@ -353,48 +354,95 @@ export function HRCommandCenter() {
           <div className="hrms-card bento-span-2 animate-fade-in-up anim-delay-150" style={{ padding: '1.6rem' }}>
             <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Department Headcount & Burnout</h3>
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={analytics?.departmentMetrics ?? []} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="#E5EAF1" />
-                <XAxis dataKey="department" tick={{ fontSize: 10, fill: '#8C8C8C' }} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: '#8C8C8C' }} />
+              <BarChart data={analytics?.departmentMetrics ?? []} margin={{ top: 16, right: 4, left: -16, bottom: 0 }} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="2 4" stroke="#E5EAF1" vertical={false} />
+                <XAxis dataKey="department" tick={{ fontSize: 10, fill: '#8C8C8C' }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: '#8C8C8C' }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="r" orientation="right" domain={[0, 1]}
-                       tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                       tick={{ fontSize: 10, fill: '#8C8C8C' }} />
-                <Tooltip contentStyle={{
-                  background: 'var(--color-neutral-1)',
-                  border:     '1px solid var(--color-stroke)',
-                  borderRadius: 8, fontSize: 11,
-                }} />
-                <Bar yAxisId="l" dataKey="headcount"      name="Headcount"     fill="#1C509D" radius={[3, 3, 0, 0]} />
-                <Bar yAxisId="r" dataKey="avgBurnoutRisk" name="Burnout Risk"  fill="#FFA500" radius={[3, 3, 0, 0]} />
+                       tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
+                       tick={{ fontSize: 10, fill: '#8C8C8C' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  content={({ active, payload, label }: any) => {
+                    if (!active || !payload?.length) return null;
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const hc = payload.find((p: any) => p.dataKey === 'headcount')?.value ?? 0;
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const br = payload.find((p: any) => p.dataKey === 'avgBurnoutRisk')?.value ?? 0;
+                    return (
+                      <div className="hrms-card" style={{ padding: '0.8rem 1.2rem', fontSize: 'var(--text-fs-12)', minWidth: 140 }}>
+                        <p style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: 'var(--color-neutral-10)' }}>{label}</p>
+                        <p style={{ margin: 0, color: 'var(--color-vr-blue-7)' }}>Headcount: <strong>{hc}</strong></p>
+                        <p style={{ margin: 0, color: '#D97706' }}>Burnout risk: <strong>{(Number(br) * 100).toFixed(0)}%</strong></p>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill="#1C509D" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="headcount" position="top" style={{ fontSize: 9, fill: '#8C8C8C' }} />
+                </Bar>
+                <Bar yAxisId="r" dataKey="avgBurnoutRisk" name="Burnout Risk" fill="#F59E0B" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="hrms-card animate-fade-in-up anim-delay-225" style={{ padding: '1.6rem' }}>
             <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Risk Distribution</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={analytics?.riskDistribution ?? []}
-                  cx="50%" cy="50%"
-                  innerRadius={45} outerRadius={70}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {(analytics?.riskDistribution ?? []).map((e, i) => (
-                    <Cell key={i} fill={e.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{
-                  background: 'var(--color-neutral-1)',
-                  border:     '1px solid var(--color-stroke)',
-                  borderRadius: 8, fontSize: 11,
-                }} />
-                <Legend iconSize={8} iconType="circle"
-                        wrapperStyle={{ fontSize: 10, color: '#595959' }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative' }}>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={analytics?.riskDistribution ?? []}
+                    cx="50%" cy="45%"
+                    innerRadius={42} outerRadius={66}
+                    paddingAngle={3}
+                    dataKey="value"
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    activeShape={(props: any) => {
+                      const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                      return (
+                        <Sector cx={cx} cy={cy} innerRadius={innerRadius - 3} outerRadius={outerRadius + 7}
+                          startAngle={startAngle} endAngle={endAngle} fill={fill} />
+                      );
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {(analytics?.riskDistribution ?? []).map((e, i) => (
+                      <Cell key={i} fill={e.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={({ active, payload }: any) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0];
+                      const total = (analytics?.riskDistribution ?? []).reduce((s, r) => s + r.value, 0);
+                      const pct = total > 0 ? ((Number(d.value) / total) * 100).toFixed(0) : '0';
+                      return (
+                        <div className="hrms-card" style={{ padding: '0.8rem 1.2rem', fontSize: 'var(--text-fs-12)' }}>
+                          <p style={{ margin: '0 0 0.2rem', fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: 'var(--color-neutral-10)' }}>{d.name}</p>
+                          <p style={{ margin: 0, color: 'var(--color-neutral-7)' }}>{d.value} employee{Number(d.value) !== 1 ? 's' : ''} · {pct}%</p>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 10, color: '#595959' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center donut label */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0,
+                height: 150,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                pointerEvents: 'none',
+              }}>
+                <p style={{ margin: 0, fontFamily: 'var(--font-jk-bd)', fontWeight: 700, fontSize: 20, color: 'var(--color-neutral-10)', lineHeight: 1 }}>
+                  {(analytics?.riskDistribution ?? []).reduce((s, r) => s + r.value, 0)}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 9, color: '#8C8C8C', letterSpacing: '0.05em', textTransform: 'uppercase' }}>employees</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -494,12 +542,68 @@ export function HRCommandCenter() {
 
       {/* Bottom row */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '1.2rem', padding: '0 2rem 2rem 2rem', flexShrink: 0,
       }}>
         <div className="animate-fade-in-up anim-delay-300">
           <ComplianceMonitor metrics={analytics?.departmentMetrics ?? []} />
         </div>
+
+        {/* Leave Trend chart — 6-month area */}
+        <div className="hrms-card animate-fade-in-up anim-delay-350" style={{ padding: '1.6rem' }}>
+          <h3 className="hrms-section-label" style={{ marginBottom: '1rem' }}>Leave Trend (6 months)</h3>
+          {(() => {
+            const trendData = (analytics?.leaveTrend ?? []).map((d) => ({
+              ...d,
+              label: new Date(d.month + '-02').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+            }));
+            if (!trendData.length) return (
+              <p style={{ color: 'var(--color-neutral-6)', fontSize: 'var(--text-fs-12)', textAlign: 'center', padding: '2.4rem 0', margin: 0 }}>
+                No leave data in the last 6 months.
+              </p>
+            );
+            return (
+              <ResponsiveContainer width="100%" height={160}>
+                <AreaChart data={trendData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="ltTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1C509D" stopOpacity={0.18} />
+                      <stop offset="95%" stopColor="#1C509D" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="ltApproved" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.22} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 4" stroke="#E5EAF1" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#8C8C8C' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#8C8C8C' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={({ active, payload, label }: any) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="hrms-card" style={{ padding: '0.8rem 1.2rem', fontSize: 'var(--text-fs-12)', minWidth: 130 }}>
+                          <p style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-in-sb)', fontWeight: 600, color: 'var(--color-neutral-10)' }}>{label}</p>
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {payload.map((p: any) => (
+                            <p key={p.dataKey} style={{ margin: 0, color: p.color }}>{p.name}: <strong>{p.value}</strong></p>
+                          ))}
+                        </div>
+                      );
+                    }}
+                    cursor={{ stroke: '#E5EAF1', strokeWidth: 1 }}
+                  />
+                  <Area type="monotone" dataKey="total" name="Total" stroke="#1C509D" strokeWidth={2} fill="url(#ltTotal)" dot={false} activeDot={{ r: 4 }} />
+                  <Area type="monotone" dataKey="approved" name="Approved" stroke="#22c55e" strokeWidth={2} fill="url(#ltApproved)" dot={false} activeDot={{ r: 4 }} />
+                  <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 3" fill="none" dot={false} activeDot={{ r: 3 }} />
+                  <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 10, color: '#595959' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            );
+          })()}
+        </div>
+
         <div className="animate-fade-in-up anim-delay-400">
           <PayrollConsole total={s?.latestPayrollTotal ?? 0} currency="USD" />
         </div>

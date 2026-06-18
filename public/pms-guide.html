@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PMS Engine — HRMS User & Developer Guide</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-1: #EFF6FF; --blue-2: #DBEAFE; --blue-6: #2563EB; --blue-7: #1D4ED8; --blue-9: #1E3A5F;
+      --green-1: #ECFDF5; --green-6: #16A34A; --green-7: #15803D;
+      --amber-1: #FFFBEB; --amber-6: #D97706; --amber-7: #B45309;
+      --red-1: #FEF2F2; --red-6: #DC2626; --red-7: #B91C1C;
+      --purple-1: #F5F3FF; --purple-6: #7C3AED;
+      --cyan-1: #ECFEFF; --cyan-6: #0891B2;
+      --neutral-1: #FFFFFF; --neutral-2: #F8FAFC; --neutral-3: #F1F5F9;
+      --neutral-4: #E2E8F0; --neutral-5: #CBD5E1; --neutral-6: #94A3B8;
+      --neutral-7: #64748B; --neutral-8: #475569; --neutral-9: #334155; --neutral-10: #0F172A;
+      --radius: 10px; --radius-lg: 16px; --radius-xl: 24px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow: 0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.06);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--neutral-2);
+      color: var(--neutral-9);
+      font-size: 14px;
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .page-shell { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--neutral-10);
+      padding: 0;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #334155 transparent;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    .sidebar-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-brand h1 {
+      font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -.3px; margin-bottom: 2px;
+    }
+    .sidebar-brand p { font-size: 11px; color: #64748B; }
+
+    .sidebar-nav { padding: 12px 0; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-label {
+      padding: 8px 20px 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: #475569;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 20px;
+      font-size: 12.5px; font-weight: 500; color: #94A3B8;
+      text-decoration: none; transition: all 120ms;
+      border-left: 2px solid transparent;
+    }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,.05); }
+    .nav-link.active { color: #60A5FA; border-left-color: #2563EB; background: rgba(37,99,235,.12); }
+    .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    main { flex: 1; padding: 40px 48px; max-width: 960px; }
+
+    /* ── Typography ── */
+    h1.page-title {
+      font-size: 28px; font-weight: 800; color: var(--neutral-10);
+      letter-spacing: -.6px; line-height: 1.2; margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 20px; font-weight: 700; color: var(--neutral-10);
+      letter-spacing: -.3px; margin: 48px 0 16px; padding-top: 8px;
+      border-bottom: 2px solid var(--neutral-4); padding-bottom: 10px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: var(--neutral-9); margin: 28px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: var(--neutral-8); margin: 20px 0 8px; }
+    p { margin-bottom: 12px; color: var(--neutral-8); }
+    strong { color: var(--neutral-10); font-weight: 600; }
+    a { color: var(--blue-6); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; color: var(--neutral-8); }
+    li { margin-bottom: 4px; }
+
+    section { margin-bottom: 12px; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #1E40AF 100%);
+      border-radius: var(--radius-xl);
+      padding: 40px 44px;
+      margin-bottom: 40px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -40px; right: -40px;
+      width: 280px; height: 280px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(96,165,250,.2) 0%, transparent 70%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 99px; padding: 4px 12px;
+      font-size: 11px; font-weight: 700; color: #93C5FD; letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .hero h1 { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -.5px; margin-bottom: 12px; }
+    .hero p { color: rgba(255,255,255,.72); font-size: 14px; margin-bottom: 0; max-width: 580px; }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .hero-pill {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.85); border-radius: 99px; padding: 4px 12px; font-size: 11px; font-weight: 600;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--neutral-1); border: 1px solid var(--neutral-4);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+      padding: 24px; margin-bottom: 20px;
+    }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .card-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .card-icon.blue  { background: var(--blue-1); }
+    .card-icon.green { background: var(--green-1); }
+    .card-icon.amber { background: var(--amber-1); }
+    .card-icon.red   { background: var(--red-1); }
+    .card-icon.purple{ background: var(--purple-1); }
+    .card-icon.cyan  { background: var(--cyan-1); }
+    .card h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--neutral-10); }
+    .card p  { margin: 0; font-size: 12px; color: var(--neutral-7); }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 680px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ── State Machine / Flow ── */
+    .flow-wrap {
+      background: var(--neutral-1); border: 1px solid var(--neutral-4);
+      border-radius: var(--radius-lg); padding: 28px; margin-bottom: 20px; overflow-x: auto;
+    }
+    .flow-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--neutral-6); margin-bottom: 20px; }
+    .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+    .flow-node {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--blue-1); border: 1.5px solid var(--blue-2);
+      border-radius: 10px; padding: 10px 16px; min-width: 110px;
+      text-align: center;
+    }
+    .flow-node .node-label { font-size: 11px; font-weight: 700; color: var(--blue-7); }
+    .flow-node .node-sub   { font-size: 9px;  color: var(--blue-6); margin-top: 2px; }
+    .flow-node.current { background: var(--blue-6); border-color: var(--blue-7); }
+    .flow-node.current .node-label { color: #fff; }
+    .flow-node.current .node-sub   { color: rgba(255,255,255,.75); }
+    .flow-node.green  { background: var(--green-1); border-color: #BBF7D0; }
+    .flow-node.green .node-label { color: var(--green-7); }
+    .flow-node.green .node-sub   { color: var(--green-6); }
+    .flow-node.amber  { background: var(--amber-1); border-color: #FDE68A; }
+    .flow-node.amber .node-label { color: var(--amber-7); }
+    .flow-node.amber .node-sub   { color: var(--amber-6); }
+    .flow-node.red    { background: var(--red-1); border-color: #FECACA; }
+    .flow-node.red .node-label { color: var(--red-7); }
+    .flow-arrow {
+      font-size: 18px; color: var(--neutral-5); padding: 0 6px; flex-shrink: 0; line-height: 1;
+    }
+    .flow-branch {
+      display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+    }
+    .flow-branch-item {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .flow-branch-label { font-size: 10px; font-weight: 600; color: var(--neutral-6); white-space: nowrap; }
+
+    /* ── Step list ── */
+    .steps { list-style: none; padding: 0; counter-reset: step; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+      background: var(--blue-6); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .step-body h4 { margin: 0 0 4px; font-size: 13px; }
+    .step-body p  { margin: 0; font-size: 12px; color: var(--neutral-7); }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead tr { background: var(--neutral-3); }
+    th {
+      padding: 10px 14px; text-align: left; font-weight: 700; font-size: 11px;
+      letter-spacing: .05em; text-transform: uppercase; color: var(--neutral-7);
+      border-bottom: 1px solid var(--neutral-4);
+    }
+    td {
+      padding: 10px 14px; border-bottom: 1px solid var(--neutral-4);
+      vertical-align: top; color: var(--neutral-8);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--neutral-2); }
+
+    /* ── Code / Inline ── */
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--neutral-3); border: 1px solid var(--neutral-4);
+      border-radius: 5px; padding: 1px 6px; font-size: 12px; color: var(--blue-7);
+    }
+    pre {
+      background: #0F172A; border-radius: var(--radius);
+      padding: 20px 24px; overflow-x: auto; margin-bottom: 16px;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+      color: #E2E8F0; font-size: 12.5px; line-height: 1.7; white-space: pre;
+    }
+    .comment { color: #475569; }
+    .kw  { color: #818CF8; }
+    .str { color: #34D399; }
+    .num { color: #FB923C; }
+    .key { color: #60A5FA; }
+    .fn  { color: #F472B6; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 99px; padding: 2px 10px; font-size: 11px; font-weight: 600;
+    }
+    .badge.blue   { background: var(--blue-1);   color: var(--blue-7); }
+    .badge.green  { background: var(--green-1);  color: var(--green-7); }
+    .badge.amber  { background: var(--amber-1);  color: var(--amber-7); }
+    .badge.red    { background: var(--red-1);    color: var(--red-7); }
+    .badge.purple { background: var(--purple-1); color: var(--purple-6); }
+    .badge.neutral{ background: var(--neutral-3);color: var(--neutral-7); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* ── Role cards ── */
+    .role-card {
+      border: 1.5px solid var(--neutral-4);
+      border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px;
+    }
+    .role-card-header {
+      padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .role-card-header.blue   { background: var(--blue-1); border-bottom: 1px solid var(--blue-2); }
+    .role-card-header.green  { background: var(--green-1); border-bottom: 1px solid #BBF7D0; }
+    .role-card-header.amber  { background: var(--amber-1); border-bottom: 1px solid #FDE68A; }
+    .role-card-header .role-icon {
+      font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.6); border-radius: 8px;
+    }
+    .role-card-header h3 { margin: 0; font-size: 14px; }
+    .role-card-header p  { margin: 0; font-size: 11px; }
+    .role-card-body { padding: 16px 20px; }
+    .role-card-body ul { margin: 0; padding-left: 18px; }
+    .role-card-body li { font-size: 12.5px; color: var(--neutral-8); margin-bottom: 6px; }
+
+    /* ── Nine-box ── */
+    .nine-box-wrap { margin-bottom: 20px; }
+    .nine-box-label { font-size: 11px; font-weight: 600; color: var(--neutral-6); margin-bottom: 8px; }
+    .nine-box {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 90px);
+      gap: 4px; background: var(--neutral-4); border-radius: var(--radius-lg);
+      padding: 4px; border: 1px solid var(--neutral-4);
+      font-size: 11.5px; font-weight: 600;
+    }
+    .nb-cell {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 8px; gap: 4px; text-align: center; padding: 8px;
+      cursor: default; transition: transform 120ms, box-shadow 120ms;
+    }
+    .nb-cell:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,.10); }
+    .nb-cell .nb-name { font-size: 11px; font-weight: 700; }
+    .nb-cell .nb-sub  { font-size: 9.5px; font-weight: 500; opacity: .75; }
+    .nb-cell .nb-icon { font-size: 20px; }
+
+    /* ── Callout ── */
+    .callout {
+      display: flex; gap: 12px; padding: 14px 18px; border-radius: var(--radius);
+      margin-bottom: 16px; border-left: 3px solid;
+    }
+    .callout.info   { background: var(--blue-1);   border-color: var(--blue-6);   color: var(--blue-7); }
+    .callout.warn   { background: var(--amber-1);  border-color: var(--amber-6);  color: var(--amber-7); }
+    .callout.danger { background: var(--red-1);    border-color: var(--red-6);    color: var(--red-7); }
+    .callout.ok     { background: var(--green-1);  border-color: var(--green-6);  color: var(--green-7); }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body p { margin: 0; font-size: 12.5px; color: inherit; }
+    .callout-body strong { color: inherit; }
+
+    /* ── Compensation flow diagram ── */
+    .comp-flow {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 0;
+      align-items: start; background: var(--neutral-1);
+      border: 1px solid var(--neutral-4); border-radius: var(--radius-lg);
+      overflow: hidden; margin-bottom: 20px;
+    }
+    .comp-step {
+      padding: 20px; background: var(--neutral-2);
+      border-right: 1px solid var(--neutral-4);
+    }
+    .comp-step:last-child { border-right: none; }
+    .comp-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--blue-6); color: #fff;
+      font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .comp-step h4 { margin: 0 0 6px; font-size: 13px; }
+    .comp-step p  { margin: 0; font-size: 11.5px; color: var(--neutral-7); }
+    .comp-arrow-col {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px; color: var(--neutral-5); font-size: 20px; padding-top: 36px;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--neutral-1); border: 1px solid var(--neutral-4);
+      border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 32px;
+    }
+    .toc h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+      color: var(--neutral-6); margin-bottom: 12px; }
+    .toc-list { list-style: none; padding: 0; columns: 2; column-gap: 24px; }
+    .toc-list li { margin-bottom: 6px; break-inside: avoid; }
+    .toc-list a { font-size: 12.5px; color: var(--blue-6); text-decoration: none; }
+    .toc-list a:hover { text-decoration: underline; }
+
+    /* ── Misc ── */
+    .chip {
+      display: inline-flex; align-items: center;
+      background: var(--neutral-3); border: 1px solid var(--neutral-4);
+      border-radius: 6px; padding: 2px 8px; font-size: 11px;
+      font-weight: 600; color: var(--neutral-8); font-family: monospace;
+    }
+    .divider { border: none; border-top: 1px solid var(--neutral-4); margin: 32px 0; }
+    .tag {
+      display: inline-block; border-radius: 5px; padding: 1px 7px;
+      font-size: 11px; font-weight: 600; font-family: monospace;
+    }
+    .tag.get    { background: #DBEAFE; color: #1D4ED8; }
+    .tag.post   { background: #DCFCE7; color: #15803D; }
+    .tag.put    { background: #FEF3C7; color: #B45309; }
+    .tag.patch  { background: #F3E8FF; color: #6D28D9; }
+    .tag.delete { background: #FEE2E2; color: #B91C1C; }
+  </style>
+</head>
+<body>
+<div class="page-shell">
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <nav class="sidebar" aria-label="Page navigation">
+    <div class="sidebar-brand">
+      <h1>HRMS · PMS Guide</h1>
+      <p>Performance Management System</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <a class="nav-link active" href="#what-is-pms"><span class="nav-dot"></span>What is PMS?</a>
+        <a class="nav-link" href="#who-uses"><span class="nav-dot"></span>Who Uses It</a>
+        <a class="nav-link" href="#core-concepts"><span class="nav-dot"></span>Core Concepts</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Workflows</div>
+        <a class="nav-link" href="#cycle-lifecycle"><span class="nav-dot"></span>Cycle Lifecycle</a>
+        <a class="nav-link" href="#review-workflow"><span class="nav-dot"></span>Review Workflow</a>
+        <a class="nav-link" href="#compensation-flow"><span class="nav-dot"></span>Compensation Flow</a>
+        <a class="nav-link" href="#pip-flow"><span class="nav-dot"></span>PIP Management</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">By Role</div>
+        <a class="nav-link" href="#hr-admin"><span class="nav-dot"></span>HR Admin</a>
+        <a class="nav-link" href="#manager"><span class="nav-dot"></span>Manager</a>
+        <a class="nav-link" href="#employee"><span class="nav-dot"></span>Employee</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Tools</div>
+        <a class="nav-link" href="#nine-box"><span class="nav-dot"></span>9-Box Grid</a>
+        <a class="nav-link" href="#goal-builder"><span class="nav-dot"></span>Goal Builder</a>
+        <a class="nav-link" href="#feedback"><span class="nav-dot"></span>Feedback Engine</a>
+        <a class="nav-link" href="#score-engine"><span class="nav-dot"></span>Score Engine</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Developer</div>
+        <a class="nav-link" href="#data-models"><span class="nav-dot"></span>Data Models</a>
+        <a class="nav-link" href="#api-reference"><span class="nav-dot"></span>API Reference</a>
+        <a class="nav-link" href="#encryption"><span class="nav-dot"></span>Encryption</a>
+        <a class="nav-link" href="#effective-dating"><span class="nav-dot"></span>Effective-Dating</a>
+        <a class="nav-link" href="#notifications"><span class="nav-dot"></span>Notifications</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main Content ───────────────────────────────────── -->
+  <main>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">📊 Full Reference</div>
+      <h1>Performance Management System</h1>
+      <p>
+        A multi-phase, role-based appraisal engine with configurable cycles, weighted scoring,
+        two-step compensation approval, PIP auto-triggering, encrypted feedback, and effective-dated
+        org hierarchy — all built into the HRMS platform.
+      </p>
+      <div class="hero-pills">
+        <span class="hero-pill">Appraisal Cycles</span>
+        <span class="hero-pill">Weighted Scoring</span>
+        <span class="hero-pill">360° Reviews</span>
+        <span class="hero-pill">Comp Approval</span>
+        <span class="hero-pill">PIP Engine</span>
+        <span class="hero-pill">9-Box Grid</span>
+        <span class="hero-pill">OKR Goals</span>
+        <span class="hero-pill">AES-256 Encryption</span>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+      <h3>Contents</h3>
+      <ul class="toc-list">
+        <li><a href="#what-is-pms">1. What is PMS?</a></li>
+        <li><a href="#who-uses">2. Who Uses It</a></li>
+        <li><a href="#core-concepts">3. Core Concepts</a></li>
+        <li><a href="#cycle-lifecycle">4. Cycle Lifecycle</a></li>
+        <li><a href="#review-workflow">5. Review Workflow</a></li>
+        <li><a href="#compensation-flow">6. Compensation Flow</a></li>
+        <li><a href="#pip-flow">7. PIP Management</a></li>
+        <li><a href="#hr-admin">8. HR Admin Guide</a></li>
+        <li><a href="#manager">9. Manager Guide</a></li>
+        <li><a href="#employee">10. Employee Guide</a></li>
+        <li><a href="#nine-box">11. 9-Box Grid</a></li>
+        <li><a href="#goal-builder">12. Goal Builder</a></li>
+        <li><a href="#feedback">13. Feedback Engine</a></li>
+        <li><a href="#score-engine">14. Score Engine</a></li>
+        <li><a href="#data-models">15. Data Models</a></li>
+        <li><a href="#api-reference">16. API Reference</a></li>
+        <li><a href="#encryption">17. Encryption</a></li>
+        <li><a href="#effective-dating">18. Effective-Dating</a></li>
+        <li><a href="#notifications">19. Notifications</a></li>
+      </ul>
+    </div>
+
+    <!-- ──────────────────────────── SECTION 1 ── -->
+    <section id="what-is-pms">
+      <h2>1. What is the PMS Engine?</h2>
+      <p>
+        The <strong>Performance Management System (PMS)</strong> is the evaluation and people-development
+        engine of the HRMS. It governs the entire employee performance lifecycle — from setting goals at the
+        start of a cycle to approving salary revisions at the end.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon blue">🎯</div>
+            <div>
+              <h3>Appraisal Cycles</h3>
+              <p>Annual, half-year, quarterly, probation</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            Define phases, timelines, and formula weights for each evaluation period.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon green">⭐</div>
+            <div>
+              <h3>Weighted Scoring</h3>
+              <p>Self 20% · Manager 60% · Peer 20%</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            Configurable formula. Final score aggregated across reviewer roles on a 1–5 scale.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon amber">💰</div>
+            <div>
+              <h3>Comp Approval</h3>
+              <p>Two-step with skip-level + SoD</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            Promotions and large increments require skip-level endorsement before HR sign-off.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon red">🚨</div>
+            <div>
+              <h3>PIP Auto-Trigger</h3>
+              <p>Below-threshold score → PIP draft</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            When HR approves a cycle, employees scoring below the PIP threshold get auto-enrolled.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon purple">💬</div>
+            <div>
+              <h3>Encrypted Feedback</h3>
+              <p>AES-256-GCM at rest</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            Shoutouts, coaching notes, and one-on-one actions — all encrypted before storage.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon cyan">🗂️</div>
+            <div>
+              <h3>OKR Goal Tracking</h3>
+              <p>Progress check-ins, key results</p>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--neutral-7);margin:0">
+            Goals linked to appraisal cycles. Track % progress with key results per goal.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 2 ── -->
+    <section id="who-uses">
+      <h2>2. Who Uses It</h2>
+      <div class="role-card">
+        <div class="role-card-header blue">
+          <div class="role-icon">🛡️</div>
+          <div>
+            <h3>HR Admin / Super Admin</h3>
+            <p>Full control — create cycles, calibrate scores, approve compensation, manage PIPs</p>
+          </div>
+        </div>
+        <div class="role-card-body">
+          <ul>
+            <li>Create and configure appraisal cycles (phases, formula weights, calibration bands)</li>
+            <li>Advance cycle through its 8-phase state machine</li>
+            <li>Bulk-open self-reviews for all active employees</li>
+            <li>Calibrate individual scores (override final score)</li>
+            <li>Run score computation engine across all reviews</li>
+            <li>Give final compensation sign-off (last step in two-step flow)</li>
+            <li>Create and manage PIPs; view encrypted PIP notes</li>
+            <li>View all feedback events (decrypted)</li>
+            <li>Update org hierarchy (effective-dated reporting lines)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card-header amber">
+          <div class="role-icon">👔</div>
+          <div>
+            <h3>Manager / HR Manager</h3>
+            <p>Review direct reports, write ratings, recommend compensation</p>
+          </div>
+        </div>
+        <div class="role-card-body">
+          <ul>
+            <li>Access reviews for all direct reports via <strong>My Team</strong></li>
+            <li>Rate each competency and goal dimension (1–5 scale)</li>
+            <li>Write encrypted narrative comments per rating</li>
+            <li>Finalize review — triggers compensation recommendation prompt</li>
+            <li>Recommend increment % and promotion (subject to skip-level / HR approval)</li>
+            <li>Act as skip-level manager for second-line reports' two-step flows</li>
+            <li>Add coaching notes and one-on-one actions via Feedback Engine</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card-header green">
+          <div class="role-icon">👤</div>
+          <div>
+            <h3>Employee</h3>
+            <p>Complete self-appraisal, set goals, view final review, acknowledge outcome</p>
+          </div>
+        </div>
+        <div class="role-card-body">
+          <ul>
+            <li>Open self-review at <strong>/my/performance</strong> during self-appraisal phase</li>
+            <li>Rate own competencies, summarize achievements &amp; challenges</li>
+            <li>Submit self-assessment (cannot edit after submission)</li>
+            <li>Create and track OKR goals; add check-in progress updates</li>
+            <li>View final review once HR finalizes</li>
+            <li>Acknowledge outcome (marks review as <code>acknowledged</code>)</li>
+            <li>Give and receive anytime feedback and shoutouts</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 3 ── -->
+    <section id="core-concepts">
+      <h2>3. Core Concepts</h2>
+
+      <h3>Appraisal Cycle</h3>
+      <p>
+        A cycle is the top-level container for a performance period (e.g., "H1 2026 Annual Review").
+        It defines which phases run, when they open/close, the scoring formula, calibration bands,
+        and the PIP score threshold.
+      </p>
+
+      <h3>PMS Review vs. Performance Review</h3>
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <div class="callout-body">
+          <p>
+            <strong>Two review models co-exist:</strong>
+            The newer <strong>PMS Review</strong> (<code>ws_pms_reviews</code>) supports multi-role,
+            multi-phase cycles with encrypted comments, calibration, and 360°.
+            The legacy <strong>Performance Review</strong> (<code>ws_performance_reviews</code>) is a
+            simpler 5-status flow used by the <em>/performance</em> HR page.
+            Both are actively used — the PMS model for new cycles, the legacy model for the comp-approval engine.
+          </p>
+        </div>
+      </div>
+
+      <h3>Reviewer Roles</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th>Who</th><th>Phase</th><th>Weight (default)</th></tr></thead>
+          <tbody>
+            <tr><td><code>self</code></td><td>Employee reviewing themselves</td><td>self_appraisal</td><td>20%</td></tr>
+            <tr><td><code>manager</code></td><td>Direct reporting manager</td><td>manager_review</td><td>60%</td></tr>
+            <tr><td><code>peer</code></td><td>Nominated peers (averaged)</td><td>peer_360</td><td>20%</td></tr>
+            <tr><td><code>skip_level</code></td><td>Manager's manager</td><td>manager_review</td><td>—</td></tr>
+            <tr><td><code>hr</code></td><td>HR admin</td><td>calibration</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Competencies (Legacy Model)</h3>
+      <p>Each performance review rates five standard competencies on a 1–5 scale:</p>
+      <div class="grid-3">
+        <div style="background:var(--blue-1);border:1px solid var(--blue-2);border-radius:8px;padding:10px 14px">
+          <strong style="font-size:12px">🚀 Delivery</strong>
+          <p style="font-size:11px;margin:2px 0 0;color:var(--blue-7)">Meets deadlines, output quality</p>
+        </div>
+        <div style="background:var(--green-1);border:1px solid #BBF7D0;border-radius:8px;padding:10px 14px">
+          <strong style="font-size:12px">🤝 Collaboration</strong>
+          <p style="font-size:11px;margin:2px 0 0;color:var(--green-7)">Team effectiveness</p>
+        </div>
+        <div style="background:var(--purple-1);border:1px solid #DDD6FE;border-radius:8px;padding:10px 14px">
+          <strong style="font-size:12px">🧠 Expertise</strong>
+          <p style="font-size:11px;margin:2px 0 0;color:var(--purple-6)">Domain knowledge, skills</p>
+        </div>
+        <div style="background:var(--amber-1);border:1px solid #FDE68A;border-radius:8px;padding:10px 14px">
+          <strong style="font-size:12px">🏆 Ownership</strong>
+          <p style="font-size:11px;margin:2px 0 0;color:var(--amber-7)">Initiative, accountability</p>
+        </div>
+        <div style="background:var(--cyan-1);border:1px solid #A5F3FC;border-radius:8px;padding:10px 14px">
+          <strong style="font-size:12px">💬 Communication</strong>
+          <p style="font-size:11px;margin:2px 0 0;color:var(--cyan-6)">Clarity, stakeholder mgmt</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 4 ── -->
+    <section id="cycle-lifecycle">
+      <h2>4. Appraisal Cycle Lifecycle</h2>
+      <p>A cycle moves through 8 states. Only HR Admin or Super Admin can trigger transitions.</p>
+
+      <div class="flow-wrap">
+        <div class="flow-title">Cycle State Machine</div>
+        <div class="flow" style="flex-wrap:wrap;gap:6px">
+          <div class="flow-node">
+            <span class="node-label">draft</span>
+            <span class="node-sub">Edit config</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <span class="node-label">cycle_initiated</span>
+            <span class="node-sub">Reviews open</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node green">
+            <span class="node-label">self_appraisal</span>
+            <span class="node-sub">Employees write</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <span class="node-label">manager_review</span>
+            <span class="node-sub">Managers rate</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node amber">
+            <span class="node-label">peer_360</span>
+            <span class="node-sub">Optional</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <span class="node-label">calibration</span>
+            <span class="node-sub">HR adjusts</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node current">
+            <span class="node-label">approved_hr</span>
+            <span class="node-sub">PIPs triggered</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node green">
+            <span class="node-label">signed_off</span>
+            <span class="node-sub">Employees ack</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node" style="background:var(--neutral-3);border-color:var(--neutral-5)">
+            <span class="node-label" style="color:var(--neutral-7)">archived</span>
+            <span class="node-sub" style="color:var(--neutral-6)">Closed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What Happens</th><th>Who Acts</th></tr></thead>
+          <tbody>
+            <tr><td><code>draft</code></td><td>Cycle editable — change name, phases, formula, calibration bands, PIP threshold</td><td>HR Admin</td></tr>
+            <tr><td><code>cycle_initiated</code></td><td>HR bulk-opens self-reviews for all active employees; notification sent</td><td>HR Admin</td></tr>
+            <tr><td><code>self_appraisal</code></td><td>Employees submit self-reviews; manager reviews locked during this phase</td><td>Employees</td></tr>
+            <tr><td><code>manager_review</code></td><td>Self-reviews locked; managers rate competencies and write comments</td><td>Managers</td></tr>
+            <tr><td><code>peer_360</code></td><td>Optional (if <code>enable360=true</code>); nominated peers submit reviews; anonymised</td><td>Peers</td></tr>
+            <tr><td><code>calibration</code></td><td>HR overrides individual calibratedScores to align with distribution targets</td><td>HR Admin</td></tr>
+            <tr><td><code>approved_hr</code></td><td>Score computation runs; employees below <code>pipThreshold</code> get auto-PIP draft</td><td>HR Admin (system)</td></tr>
+            <tr><td><code>signed_off</code></td><td>Employees can view and acknowledge final outcome</td><td>Employees</td></tr>
+            <tr><td><code>archived</code></td><td>Cycle closed; read-only; data preserved for history</td><td>HR Admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Phase Locking Behavior</h3>
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <p>
+            When advancing past <code>self_appraisal</code>, all self-reviews still in <code>draft</code>
+            are automatically <strong>locked</strong> (<code>lockedAt = now</code>). Locked reviews
+            cannot be edited. A manager can still call "recall" to reopen a locked review if needed,
+            but this requires HR approval. The same lock applies to manager reviews when advancing past
+            <code>manager_review</code>.
+          </p>
+        </div>
+      </div>
+
+      <h3>Creating a Cycle (Step by Step)</h3>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h4>Navigate to PMS → Admin Panel</h4>
+            <p>Go to <strong>/performance/pms</strong> → click the <em>Admin Panel</em> tab.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Create New Cycle</h4>
+            <p>Click <em>New Cycle</em>. Enter name (e.g., "H1 2026"), type (annual/half_year/quarterly/probation), start/end dates.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Configure Phases</h4>
+            <p>Set <code>opensAt</code> and <code>closesAt</code> dates for each phase. Add <code>gracePeriodHours</code> if late submissions are allowed.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Set Formula Weights</h4>
+            <p>Configure component weights: self (20%), manager (60%), peer_avg (20%). Weights must total 100. Set scale min/max (default 1–5).</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Configure Calibration Bands</h4>
+            <p>Example: Outstanding (top 10%), Exceeds (next 20%), Meets (next 40%), Below (next 20%), Poor (bottom 10%).</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Set PIP Threshold</h4>
+            <p>Any calibrated score below this value automatically creates a PIP draft on HR approval. Set 0 to disable auto-PIP.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Initiate Cycle</h4>
+            <p>Click <em>Initiate</em>. The system sends notifications and bulk-creates self-reviews for all active/on-leave employees.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 5 ── -->
+    <section id="review-workflow">
+      <h2>5. Review Workflow (Legacy Model)</h2>
+      <p>The legacy <code>WorkspacePerformanceReview</code> model powers the HR <em>/performance</em> page with this 5-state flow:</p>
+
+      <div class="flow-wrap">
+        <div class="flow-title">Performance Review State Machine</div>
+        <div class="flow">
+          <div class="flow-node">
+            <span class="node-label">draft</span>
+            <span class="node-sub">HR opens review</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node green">
+            <span class="node-label">self_assessment</span>
+            <span class="node-sub">Employee submits</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node amber">
+            <span class="node-label">manager_review</span>
+            <span class="node-sub">Manager rates</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node current">
+            <span class="node-label">finalized</span>
+            <span class="node-sub">HR computes</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node green">
+            <span class="node-label">acknowledged</span>
+            <span class="node-sub">Employee confirms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Status</th><th>Triggered By</th><th>What It Does</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge neutral">draft</span></td>
+              <td>HR Admin via <code>POST /api/performance</code></td>
+              <td>Creates blank review skeleton; notifies employee to complete self-assessment</td>
+            </tr>
+            <tr>
+              <td><span class="badge blue">self_assessment</span></td>
+              <td>Employee submits via <em>/my/performance</em></td>
+              <td>Saves summary, achievements, challenges; notifies HR &amp; manager to review</td>
+            </tr>
+            <tr>
+              <td><span class="badge amber">manager_review</span></td>
+              <td>Manager calls <code>PUT /api/performance/[id]</code> with <code>action='finalize'</code></td>
+              <td>Saves competency ratings + comments; optionally triggers compensation recommendation</td>
+            </tr>
+            <tr>
+              <td><span class="badge purple">finalized</span></td>
+              <td>HR finalizes (or auto after manager review)</td>
+              <td>Computes <code>overallRating</code> from competency averages; notifies employee</td>
+            </tr>
+            <tr>
+              <td><span class="badge green">acknowledged</span></td>
+              <td>Employee acknowledges at <em>/my/performance</em></td>
+              <td>Records <code>employeeAck.acknowledged=true</code> and timestamp; cycle complete</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 6 ── -->
+    <section id="compensation-flow">
+      <h2>6. Compensation Approval Flow</h2>
+      <p>
+        After a manager finalizes a review, they can recommend a salary increment or promotion.
+        The system routes this through one or two approval steps depending on size and type.
+      </p>
+
+      <h3>When Two-Step Applies</h3>
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <p>Two-step approval is required when: <strong>promotion = true</strong> OR <strong>increment % > configured threshold</strong> (e.g., ≥ 20%). Single-step (HR only) applies for standard merit increments.</p>
+        </div>
+      </div>
+
+      <h3>Two-Step Flow</h3>
+      <div class="comp-flow">
+        <div class="comp-step">
+          <div class="comp-step-num">1</div>
+          <h4>Manager Recommends</h4>
+          <p>Sets increment %, promotion flag, proposed title/band, justification, effective date. System identifies skip-level manager from org hierarchy and classifies recommender relationship.</p>
+        </div>
+        <div class="comp-arrow-col">→</div>
+        <div class="comp-step">
+          <div class="comp-step-num">2</div>
+          <h4>Skip-Level Endorsement</h4>
+          <p>The 2nd-line manager receives a notification. They can <strong>approve</strong> (advances to HR) or <strong>reject</strong> (ends the chain). Segregation of duty: skip-level ≠ recommender.</p>
+        </div>
+        <div class="comp-arrow-col">→</div>
+        <div class="comp-step">
+          <div class="comp-step-num">3</div>
+          <h4>HR Final Sign-off</h4>
+          <p>HR Admin receives notification. Approves or rejects. Must differ from skip-level endorser. On acceptance: salary revision applied (or staged for future effective date) and audit log written.</p>
+        </div>
+      </div>
+
+      <h3>Segregation of Duties (SoD) Rules</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rule</th><th>Enforcement</th></tr></thead>
+          <tbody>
+            <tr><td>Recommender ≠ Approver</td><td>The manager who recommended cannot approve at any step</td></tr>
+            <tr><td>Skip-level endorser ≠ HR approver</td><td>The second-line manager who endorsed step 1 cannot give final sign-off</td></tr>
+            <tr><td>Only designated skip-level or super_admin can endorse step 1</td><td>System validates endorser's employee ID against the stored <code>skipLevelManagerId</code></td></tr>
+            <tr><td>Only hr_admin or super_admin can approve final step</td><td>Role check enforced in API handler</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Compensation Decision States</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <span class="badge neutral"><span class="dot"></span> none</span>
+        <span class="flow-arrow" style="font-size:14px;color:var(--neutral-5)">→</span>
+        <span class="badge amber"><span class="dot"></span> pending</span>
+        <span class="flow-arrow" style="font-size:14px;color:var(--neutral-5)">→</span>
+        <span class="badge green"><span class="dot"></span> accepted</span>
+        <span style="padding:0 4px;color:var(--neutral-5)">or</span>
+        <span class="badge red"><span class="dot"></span> rejected</span>
+      </div>
+
+      <h3>Compensation History (Audit Log)</h3>
+      <p>
+        When a compensation decision is accepted, an immutable record is written to <code>ws_compensation_history</code>.
+        Old and new salary are AES-256-GCM encrypted. The increment %, titles, bands, effective date,
+        and approver are stored in clear for reporting. The record can never be deleted or modified.
+      </p>
+
+      <pre><code><span class="comment">// Example compensation history entry</span>
+{
+  <span class="key">reviewId</span>:      <span class="str">"ObjectId"</span>,
+  <span class="key">cycleLabel</span>:    <span class="str">"H1 2026"</span>,
+  <span class="key">changeType</span>:    <span class="str">"promotion"</span>,   <span class="comment">// merit | promotion | market | adjustment</span>
+  <span class="key">incrementPct</span>:  <span class="num">22.5</span>,
+  <span class="key">promotion</span>:     <span class="kw">true</span>,
+  <span class="key">oldTitle</span>:      <span class="str">"Senior Engineer"</span>,
+  <span class="key">newTitle</span>:      <span class="str">"Staff Engineer"</span>,
+  <span class="key">effectiveDate</span>: <span class="str">"2026-07-01"</span>,
+  <span class="key">appliedAt</span>:     <span class="str">"2026-07-01T00:00:00Z"</span>,
+  <span class="key">decidedById</span>:   <span class="str">"UserId of HR approver"</span>,
+  <span class="key">oldSalaryEnc</span>:  <span class="str">"&lt;Buffer — AES-256-GCM&gt;"</span>,
+  <span class="key">newSalaryEnc</span>:  <span class="str">"&lt;Buffer — AES-256-GCM&gt;"</span>
+}</code></pre>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 7 ── -->
+    <section id="pip-flow">
+      <h2>7. PIP Management (Performance Improvement Plan)</h2>
+      <p>
+        A PIP can be created manually by HR or auto-triggered when a cycle moves to <code>approved_hr</code>
+        and an employee's calibrated score falls below the cycle's <code>pipThreshold</code>.
+      </p>
+
+      <div class="flow-wrap">
+        <div class="flow-title">PIP State Machine</div>
+        <div class="flow">
+          <div class="flow-node">
+            <span class="node-label">draft</span>
+            <span class="node-sub">HR configures</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node amber">
+            <span class="node-label">active</span>
+            <span class="node-sub">Objectives tracked</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node amber">
+            <span class="node-label">checkpoint</span>
+            <span class="node-sub">Interim review</span>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-branch">
+            <div class="flow-branch-item">
+              <span class="flow-branch-label">improved →</span>
+              <div class="flow-node green"><span class="node-label">completed</span></div>
+            </div>
+            <div class="flow-branch-item">
+              <span class="flow-branch-label">escalated →</span>
+              <div class="flow-node red"><span class="node-label">terminated</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>objectives</code></td><td>List of SMART objectives with success metrics and due dates; status: pending / met / missed</td></tr>
+            <tr><td><code>checkpoints</code></td><td>Periodic check-in records; manager &amp; HR notes encrypted at rest; status: on_track / at_risk / failed</td></tr>
+            <tr><td><code>reviewDates</code></td><td>Array of scheduled checkpoint dates</td></tr>
+            <tr><td><code>outcome</code></td><td>Final outcome when PIP ends: improved / terminated / extended</td></tr>
+            <tr><td><code>managerId</code></td><td>Direct manager responsible for the PIP</td></tr>
+            <tr><td><code>hrOwnerId</code></td><td>HR admin overseeing the PIP</td></tr>
+            <tr><td><code>triggeredScore</code></td><td>The calibrated score that caused the PIP auto-trigger</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ──────────────────────────── SECTION 8 ── -->
+    <section id="hr-admin">
+      <h2>8. HR Admin — Step-by-Step Guide</h2>
+
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h4>Create a Cycle</h4>
+            <p>Go to <strong>/performance/pms → Admin Panel</strong>. Click <em>New Cycle</em>. Fill in name, type, dates, formula weights, calibration bands, PIP threshold. Save as draft.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Initiate the Cycle</h4>
+            <p>Click <em>Initiate Cycle</em>. The system auto-creates a self-review for every active/on-leave employee and sends notifications.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Monitor Self-Appraisal Progress</h4>
+            <p>Use the Admin Panel to see who has not submitted. Send bulk reminders. View lagging employees list sorted by days remaining.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Advance to Manager Review</h4>
+            <p>When satisfied with self-review completion rate, click <em>Close Self-Appraisal</em>. All draft self-reviews are auto-locked. Managers receive notifications to complete their reviews.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>(Optional) Advance to 360° Peer Review</h4>
+            <p>If the cycle has <code>enable360=true</code>, advance to peer_360. Employees nominate peers; nominated peers receive review requests.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Calibrate Scores</h4>
+            <p>In the Calibration Grid, view the 9-box distribution. Override individual calibrated scores where needed. Use the distribution bands to ensure the org curve is healthy.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Run Score Computation</h4>
+            <p>Click <em>Compute Scores</em>. The engine aggregates all submitted reviews, applies formula weights, and stamps <code>finalScore</code> on each review.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Approve Cycle (HR Sign-off)</h4>
+            <p>Advance to <code>approved_hr</code>. Employees below the PIP threshold automatically receive a PIP draft. Review and activate each PIP.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Process Compensation Approvals</h4>
+            <p>Review pending comp recommendations in <em>/performance</em>. For two-step flows, skip-level endorsement will have already arrived. Give final HR sign-off. On accept, salary revision is applied immediately or staged for the effective date.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Sign Off &amp; Archive</h4>
+            <p>Advance to <code>signed_off</code> so employees can view and acknowledge. Once all acknowledgements are in, archive the cycle.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 9 ── -->
+    <section id="manager">
+      <h2>9. Manager — Step-by-Step Guide</h2>
+
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h4>Receive Notification</h4>
+            <p>When the cycle advances to <code>manager_review</code>, you receive an in-app notification and email. Go to <strong>/my/team</strong> or <strong>/performance</strong>.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Open a Direct Report's Review</h4>
+            <p>In <em>/performance</em>, filter by status <em>manager_review</em>. Click on an employee row to open their review. You can see their self-assessment, goals, and your rating area.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Rate Competencies</h4>
+            <p>For each of the 5 competencies (Delivery, Collaboration, Expertise, Ownership, Communication), assign a rating 1–5 and write a comment. Comments are encrypted at rest.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Finalize Review</h4>
+            <p>Click <em>Finalize Review</em>. This saves all ratings and advances the review to <code>manager_review</code> status. You will be prompted to recommend a compensation adjustment.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Submit Compensation Recommendation (Optional)</h4>
+            <p>Toggle on <em>Recommend Compensation</em>. Enter increment %, check Promotion if applicable, set proposed title/band and justification. Choose effective date. Submit — the two-step flow will activate if threshold is crossed.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Act as Skip-Level Endorser</h4>
+            <p>For your second-line reports (your direct report's direct reports), you may receive a skip-level endorsement request. Review the recommendation and approve or reject in <em>/performance</em>.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 10 ── -->
+    <section id="employee">
+      <h2>10. Employee — Step-by-Step Guide</h2>
+
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h4>Receive Review Notification</h4>
+            <p>When a cycle opens, you get an in-app notification and email. Click the link or go to <strong>/my/performance</strong>.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Complete Self-Assessment</h4>
+            <p>Write a career summary, list your key achievements and challenges. Rate yourself on all 5 competencies. Add comments for each rating.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Submit Self-Review</h4>
+            <p>Click <em>Submit</em>. Once submitted you cannot edit. If the deadline passes before you submit, the review is auto-locked by the system.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Set Goals (OKRs)</h4>
+            <p>Go to <strong>/my/performance → My Goals</strong>. Add goals across Financial, Customer, Operational, or Learning &amp; Growth perspectives. Each goal needs key results with targets.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Track Progress</h4>
+            <p>Add check-in updates to your goals during the cycle. Update <code>progressPct</code> and record what changed since the last check-in.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>View Final Review</h4>
+            <p>Once the cycle reaches <code>signed_off</code>, you can see your final score, manager ratings, and calibrated score. Check your compensation outcome if applicable.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Acknowledge the Review</h4>
+            <p>Click <em>Acknowledge</em>. You may add a comment. This marks the review as <code>acknowledged</code> — the final state in the cycle.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ──────────────────────────── SECTION 11 ── -->
+    <section id="nine-box">
+      <h2>11. 9-Box Grid — Talent Visualization</h2>
+      <p>
+        The 9-box grid maps employees on a <strong>Performance (X) vs. Potential (Y)</strong> matrix.
+        Each cell represents a talent archetype. HR uses this during calibration to identify high-potential
+        employees, core contributors, and underperformers.
+      </p>
+
+      <div class="nine-box-wrap">
+        <div class="nine-box-label">↑ Potential (Y-axis) · Performance (X-axis) →</div>
+        <div class="nine-box">
+          <!-- Row 3 (High Potential) — top row -->
+          <div class="nb-cell" style="background:#F3E8FF;color:#5B21B6">
+            <span class="nb-icon">🔮</span>
+            <span class="nb-name">Enigma</span>
+            <span class="nb-sub">Low Perf · High Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#CFFAFE;color:#0E7490">
+            <span class="nb-icon">🚀</span>
+            <span class="nb-name">High Potential</span>
+            <span class="nb-sub">Mid Perf · High Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#D1FAE5;color:#065F46">
+            <span class="nb-icon">⭐</span>
+            <span class="nb-name">Top Talent</span>
+            <span class="nb-sub">High Perf · High Pot</span>
+          </div>
+          <!-- Row 2 (Mid Potential) -->
+          <div class="nb-cell" style="background:#FEF3C7;color:#78350F">
+            <span class="nb-icon">⚠️</span>
+            <span class="nb-name">Inconsistent</span>
+            <span class="nb-sub">Low Perf · Mid Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#EEF2FF;color:#3730A3">
+            <span class="nb-icon">🔑</span>
+            <span class="nb-name">Key Player</span>
+            <span class="nb-sub">Mid Perf · Mid Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#ECFDF5;color:#064E3B">
+            <span class="nb-icon">🌟</span>
+            <span class="nb-name">Current Star</span>
+            <span class="nb-sub">High Perf · Mid Pot</span>
+          </div>
+          <!-- Row 1 (Low Potential) — bottom row -->
+          <div class="nb-cell" style="background:#FEE2E2;color:#7F1D1D">
+            <span class="nb-icon">📉</span>
+            <span class="nb-name">Underperformer</span>
+            <span class="nb-sub">Low Perf · Low Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#FFF7ED;color:#7C2D12">
+            <span class="nb-icon">🔧</span>
+            <span class="nb-name">Core Employee</span>
+            <span class="nb-sub">Mid Perf · Low Pot</span>
+          </div>
+          <div class="nb-cell" style="background:#F0FDF4;color:#14532D">
+            <span class="nb-icon">💪</span>
+            <span class="nb-name">Strong Performer</span>
+            <span class="nb-sub">High Perf · Low Pot</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <div class="callout-body">
+          <p>
+            Each employee avatar is clickable in the grid. Clicking highlights the employee and shows
+            their name and role. The grid is used during <strong>calibration phase</strong> to visually
+            re-distribute talent and ensure the org's distribution matches the target bands.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 12 ── -->
+    <section id="goal-builder">
+      <h2>12. Goal Builder (OKR Engine)</h2>
+      <p>Goals are linked to appraisal cycles and organized into four strategic perspectives. Total weight across all goals must equal <strong>100%</strong>.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Focus Area</th><th>Weight Range</th><th>Examples</th></tr></thead>
+          <tbody>
+            <tr><td>💰 Financial</td><td>Revenue, cost, profitability</td><td>20–40%</td><td>Revenue target, EBITDA margin, cost reduction</td></tr>
+            <tr><td>🤝 Customer</td><td>Satisfaction, retention, growth</td><td>15–35%</td><td>NPS ≥ 70, CSAT 4.5, churn &lt; 5%</td></tr>
+            <tr><td>⚙️ Operational</td><td>Process, quality, delivery</td><td>15–35%</td><td>Deploy frequency, SLA 99.9%, cycle time reduction</td></tr>
+            <tr><td>📚 Learning &amp; Growth</td><td>Skills, certifications, talent</td><td>10–25%</td><td>Certify 3 engineers, launch mentoring program</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Goal Status Flow</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+        <span class="badge neutral">draft</span>
+        <span style="color:var(--neutral-5)">→</span>
+        <span class="badge blue">active</span>
+        <span style="color:var(--neutral-5)">→</span>
+        <span class="badge amber">at_risk</span>
+        <span style="color:var(--neutral-5)">→</span>
+        <span class="badge green">achieved</span>
+        <span style="color:var(--neutral-5)">or</span>
+        <span class="badge red">missed</span>
+        <span style="color:var(--neutral-5)">or</span>
+        <span class="badge neutral">cancelled</span>
+      </div>
+
+      <h3>Key Results</h3>
+      <p>Each goal has multiple key results with a target value, current value, unit of measurement (%, INR, USD, Score, etc.) and a done flag. Progress % is computed from key result completion.</p>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 13 ── -->
+    <section id="feedback">
+      <h2>13. Feedback Engine</h2>
+      <p>The feedback engine supports four types of people-development events. All body content is AES-256-GCM encrypted before being written to the database.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon green">🎉</div>
+            <div><h3>Shoutout</h3><p>Public recognition for a peer</p></div>
+          </div>
+          <p style="font-size:12px;margin:0;color:var(--neutral-7)">Visibility: public. Can be linked to a specific cycle or goal.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon blue">💬</div>
+            <div><h3>Anytime Feedback</h3><p>Real-time developmental input</p></div>
+          </div>
+          <p style="font-size:12px;margin:0;color:var(--neutral-7)">Visibility: private or manager_visible. Sentiment: positive / constructive / neutral.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon amber">📋</div>
+            <div><h3>One-on-One Action</h3><p>Action items from 1:1 meetings</p></div>
+          </div>
+          <p style="font-size:12px;margin:0;color:var(--neutral-7)">Manager-to-employee. Tracks agreed action items from recurring check-ins.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon purple">🎓</div>
+            <div><h3>Coaching Note</h3><p>Private coaching record</p></div>
+          </div>
+          <p style="font-size:12px;margin:0;color:var(--neutral-7)">Visibility: private. Written by manager or HR. Encrypted manager/HR notes per PIP checkpoint.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 14 ── -->
+    <section id="score-engine">
+      <h2>14. Score Computation Engine</h2>
+      <p>The score engine is triggered by HR via <code>POST /api/ws/performance/cycles/[id]/compute-scores</code>.</p>
+
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h4>Aggregate Per-Role Averages</h4>
+            <p>For each (revieweeId, reviewerRole) pair, average all rating scores across submitted/locked reviews in the cycle.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Collapse Peer Reviews</h4>
+            <p>Multiple peer reviews for the same reviewee are averaged into a single <code>peer_avg</code> value.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Apply Formula Weights</h4>
+            <p>
+              <code>finalScore = (self_avg × self_weight + manager_avg × manager_weight + peer_avg × peer_weight) / totalWeight</code>
+            </p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Clamp to Scale</h4>
+            <p>Ensure score is within <code>[scale.min, scale.max]</code>. Default: 1–5.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h4>Stamp finalScore</h4>
+            <p>Write <code>finalScore</code> to all submitted/locked reviews in the cycle. HR can then manually set <code>calibratedScore</code> for individual outliers.</p>
+          </div>
+        </li>
+      </ol>
+
+      <pre><code><span class="comment">// Default formula config stored on cycle</span>
+{
+  <span class="key">components</span>: [
+    { <span class="key">source</span>: <span class="str">"self"</span>,     <span class="key">weight</span>: <span class="num">20</span> },
+    { <span class="key">source</span>: <span class="str">"manager"</span>,  <span class="key">weight</span>: <span class="num">60</span> },
+    { <span class="key">source</span>: <span class="str">"peer_avg"</span>, <span class="key">weight</span>: <span class="num">20</span> }
+  ],
+  <span class="key">scale</span>: { <span class="key">min</span>: <span class="num">1</span>, <span class="key">max</span>: <span class="num">5</span> }
+}</code></pre>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ──────────────────────────── SECTION 15 ── -->
+    <section id="data-models">
+      <h2>15. Data Models (Developer Reference)</h2>
+
+      <h3>Collections Overview</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Collection</th><th>Model Name</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>ws_appraisal_cycles</code></td><td>WorkspaceAppraisalCycle</td><td>Cycle configuration, phases, formula, calibration bands</td></tr>
+            <tr><td><code>ws_pms_reviews</code></td><td>WorkspacePMSReview</td><td>Multi-role reviews with encrypted comments, scores, calibration</td></tr>
+            <tr><td><code>ws_peer_nominations</code></td><td>WorkspacePeerNomination</td><td>Peer nomination records per employee per cycle</td></tr>
+            <tr><td><code>ws_feedback_events</code></td><td>WorkspaceFeedbackEvent</td><td>Shoutouts, anytime feedback, coaching notes — encrypted body</td></tr>
+            <tr><td><code>ws_pips</code></td><td>WorkspacePIP</td><td>Performance Improvement Plans with encrypted checkpoint notes</td></tr>
+            <tr><td><code>ws_org_nodes</code></td><td>WorkspaceOrgNode</td><td>Effective-dated organizational hierarchy (ancestor path)</td></tr>
+            <tr><td><code>ws_performance_reviews</code></td><td>WorkspacePerformanceReview</td><td>Legacy 5-status review model with comp approval sub-document</td></tr>
+            <tr><td><code>ws_goals</code></td><td>WorkspaceGoal</td><td>OKR goals with key results and progress check-ins</td></tr>
+            <tr><td><code>ws_compensation_history</code></td><td>WorkspaceCompensationHistory</td><td>Immutable salary change audit log — encrypted old/new salary</td></tr>
+            <tr><td><code>ws_increment_matrices</code></td><td>WorkspaceIncrementMatrix</td><td>Band × rating → increment % lookup table</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Key Enum Values</h3>
+      <div class="grid-2">
+        <div>
+          <h4>Cycle Status</h4>
+          <pre><code><span class="str">draft</span> | <span class="str">cycle_initiated</span> | <span class="str">self_appraisal</span>
+<span class="str">manager_review</span> | <span class="str">peer_360</span> | <span class="str">calibration</span>
+<span class="str">approved_hr</span> | <span class="str">signed_off</span> | <span class="str">archived</span></code></pre>
+        </div>
+        <div>
+          <h4>Review Status</h4>
+          <pre><code><span class="str">draft</span> | <span class="str">submitted</span> | <span class="str">locked</span> | <span class="str">recalled</span></code></pre>
+          <h4>Reviewer Role</h4>
+          <pre><code><span class="str">self</span> | <span class="str">manager</span> | <span class="str">skip_level</span>
+<span class="str">peer</span> | <span class="str">hr</span></code></pre>
+        </div>
+        <div>
+          <h4>Performance Review Status</h4>
+          <pre><code><span class="str">draft</span> | <span class="str">self_assessment</span>
+<span class="str">manager_review</span> | <span class="str">finalized</span> | <span class="str">acknowledged</span></code></pre>
+        </div>
+        <div>
+          <h4>PIP Status</h4>
+          <pre><code><span class="str">draft</span> | <span class="str">active</span> | <span class="str">checkpoint</span>
+<span class="str">completed</span> | <span class="str">escalated</span> | <span class="str">terminated</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 16 ── -->
+    <section id="api-reference">
+      <h2>16. API Reference</h2>
+
+      <h3>Appraisal Cycles</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Roles</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/cycles</code></td><td>List cycles (paginated, filter by status)</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/cycles</code></td><td>Create new cycle</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/cycles/[id]</code></td><td>Fetch cycle detail</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag patch">PATCH</span></td><td><code>/api/ws/performance/cycles/[id]</code></td><td>Update cycle (draft only)</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag delete">DELETE</span></td><td><code>/api/ws/performance/cycles/[id]</code></td><td>Soft-delete cycle (draft only)</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/cycles/[id]/transition</code></td><td>Advance cycle state machine</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/cycles/[id]/bulk-open-reviews</code></td><td>Create self-reviews for all employees</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/cycles/[id]/compute-scores</code></td><td>Run score aggregation engine</td><td>hr_admin, super_admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>PMS Reviews</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Roles</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/cycles/[id]/reviews</code></td><td>List reviews (filter by role, status)</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/cycles/[id]/reviews</code></td><td>Create self-review for an employee</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/cycles/[id]/reviews/[reviewId]</code></td><td>Fetch review (decrypted comments)</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag patch">PATCH</span></td><td><code>/api/ws/performance/cycles/[id]/reviews/[reviewId]</code></td><td>Auto-save / submit / calibrate</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/me/performance/pms</code></td><td>Employee's self-reviews across cycles</td><td>Any (own only)</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/me/performance/pms/[reviewId]</code></td><td>Single self-review (decrypted)</td><td>Any (own only)</td></tr>
+            <tr><td><span class="tag patch">PATCH</span></td><td><code>/api/me/performance/pms/[reviewId]</code></td><td>Save draft or submit self-appraisal</td><td>Any (own only)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Legacy Performance Reviews</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Roles</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/performance</code></td><td>List all reviews (HR view)</td><td>hr_admin, hr_manager, super_admin</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/performance</code></td><td>Open a review for an employee</td><td>hr_admin, super_admin</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/performance/[id]</code></td><td>Fetch full review detail</td><td>hr_admin, hr_manager, super_admin</td></tr>
+            <tr><td><span class="tag put">PUT</span></td><td><code>/api/performance/[id]</code></td><td>Manager review: save ratings / finalize</td><td>manager, hr roles</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/me/performance</code></td><td>Employee's own reviews</td><td>Any (own only)</td></tr>
+            <tr><td><span class="tag put">PUT</span></td><td><code>/api/performance/[id]/compensation</code></td><td>Compensation approval step</td><td>skip_level mgr, hr_admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Feedback, PIPs &amp; Goals</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/feedback</code></td><td>List feedback events (hr_admin)</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/feedback</code></td><td>Create feedback (any authenticated user)</td></tr>
+            <tr><td><span class="tag delete">DELETE</span></td><td><code>/api/ws/performance/feedback/[id]</code></td><td>Delete feedback (hr_admin)</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/pips</code></td><td>List PIPs (hr_admin)</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/pips</code></td><td>Create PIP (hr_admin)</td></tr>
+            <tr><td><span class="tag patch">PATCH</span></td><td><code>/api/ws/performance/pips/[id]</code></td><td>Update PIP — status, objectives, checkpoints</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/goals</code></td><td>HR list all goals</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/me/goals</code></td><td>Employee's own goals</td></tr>
+            <tr><td><span class="tag get">GET</span></td><td><code>/api/ws/performance/org-nodes</code></td><td>Active org hierarchy nodes</td></tr>
+            <tr><td><span class="tag post">POST</span></td><td><code>/api/ws/performance/org-nodes</code></td><td>Upsert org node (effective-dated)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Example: Open a Review</h3>
+      <pre><code><span class="comment">// POST /api/performance</span>
+<span class="comment">// Body:</span>
+{
+  <span class="key">"employeeId"</span>: <span class="str">"67a1bc2e..."</span>,
+  <span class="key">"cycleLabel"</span>: <span class="str">"H1 2026"</span>,
+  <span class="key">"periodStart"</span>: <span class="str">"2026-01-01"</span>,
+  <span class="key">"periodEnd"</span>:   <span class="str">"2026-06-30"</span>
+}
+
+<span class="comment">// Response 201:</span>
+{
+  <span class="key">"data"</span>: {
+    <span class="key">"_id"</span>:         <span class="str">"..."</span>,
+    <span class="key">"status"</span>:     <span class="str">"draft"</span>,
+    <span class="key">"cycleLabel"</span>: <span class="str">"H1 2026"</span>,
+    <span class="key">"competencies"</span>: [
+      { <span class="key">"key"</span>: <span class="str">"delivery"</span>,      <span class="key">"label"</span>: <span class="str">"Delivery"</span>,       <span class="key">"selfRating"</span>: <span class="num">0</span>, <span class="key">"managerRating"</span>: <span class="num">0</span> },
+      { <span class="key">"key"</span>: <span class="str">"collaboration"</span>, <span class="key">"label"</span>: <span class="str">"Collaboration"</span>, <span class="key">"selfRating"</span>: <span class="num">0</span>, <span class="key">"managerRating"</span>: <span class="num">0</span> }
+      <span class="comment">// ...3 more</span>
+    ]
+  }
+}</code></pre>
+
+      <h3>Example: Finalize Manager Review + Recommend Compensation</h3>
+      <pre><code><span class="comment">// PUT /api/performance/[reviewId]</span>
+{
+  <span class="key">"action"</span>: <span class="str">"finalize"</span>,
+  <span class="key">"managerReview"</span>: {
+    <span class="key">"summary"</span>:         <span class="str">"Exceptional year — delivered project alpha ahead of schedule."</span>,
+    <span class="key">"areasOfStrength"</span>: <span class="str">"Technical depth, cross-team collaboration"</span>,
+    <span class="key">"areasToImprove"</span>:  <span class="str">"Executive communication"</span>,
+    <span class="key">"overallRating"</span>:   <span class="num">5</span>
+  },
+  <span class="key">"competencies"</span>: [
+    { <span class="key">"key"</span>: <span class="str">"delivery"</span>,      <span class="key">"managerRating"</span>: <span class="num">5</span>, <span class="key">"managerComment"</span>: <span class="str">"Consistently ahead of deadlines"</span> },
+    { <span class="key">"key"</span>: <span class="str">"collaboration"</span>, <span class="key">"managerRating"</span>: <span class="num">4</span>, <span class="key">"managerComment"</span>: <span class="str">"Cross-team impact"</span> }
+    <span class="comment">// ...3 more</span>
+  ],
+  <span class="key">"compensation"</span>: {
+    <span class="key">"recommended"</span>:  <span class="kw">true</span>,
+    <span class="key">"promotion"</span>:    <span class="kw">true</span>,
+    <span class="key">"proposedTitle"</span>: <span class="str">"Staff Engineer"</span>,
+    <span class="key">"proposedBand"</span>:  <span class="str">"L5"</span>,
+    <span class="key">"incrementPct"</span>:  <span class="num">22.5</span>,
+    <span class="key">"justification"</span>: <span class="str">"Promotion reflects expanded scope and consistent top-box performance."</span>,
+    <span class="key">"effectiveDate"</span>: <span class="str">"2026-07-01"</span>
+  }
+}</code></pre>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 17 ── -->
+    <section id="encryption">
+      <h2>17. Encryption at Rest</h2>
+      <p>All narrative content (review comments, feedback, PIP notes, salary figures) is encrypted at rest using <strong>AES-256-GCM</strong> with per-tenant data encryption keys (DEKs).</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Model</th><th>Format</th></tr></thead>
+          <tbody>
+            <tr><td><code>ratings[].commentEnc</code> + <code>commentIv</code></td><td>WorkspacePMSReview</td><td>[authTag(16) | ciphertext] + separate iv(12)</td></tr>
+            <tr><td><code>overallCommentEnc</code> + <code>overallCommentIv</code></td><td>WorkspacePMSReview</td><td>[authTag(16) | ciphertext] + separate iv(12)</td></tr>
+            <tr><td><code>bodyEnc</code> + <code>bodyIv</code></td><td>WorkspaceFeedbackEvent</td><td>[authTag(16) | ciphertext] + separate iv(12)</td></tr>
+            <tr><td><code>checkpoints[].managerNotesEnc</code></td><td>WorkspacePIP</td><td>[iv(12) | authTag(16) | ciphertext]</td></tr>
+            <tr><td><code>oldSalaryEnc</code> / <code>newSalaryEnc</code></td><td>WorkspaceCompensationHistory</td><td>AES-256-GCM encrypted salary Buffer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ok">
+        <span class="callout-icon">🔒</span>
+        <div class="callout-body">
+          <p>
+            Encryption is handled transparently by the server. When reading a review, the API calls
+            <code>getTenantDEK(tenantId)</code> to retrieve the tenant's key, then decrypts all
+            encrypted fields before returning the JSON response. Clients always receive plaintext —
+            they never see the raw encrypted buffers.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 18 ── -->
+    <section id="effective-dating">
+      <h2>18. Effective-Dating (Org Hierarchy)</h2>
+      <p>
+        The <code>WorkspaceOrgNode</code> model tracks the organizational reporting structure with
+        full historical accuracy using effective-dating.
+      </p>
+
+      <pre><code><span class="comment">// When a manager change occurs:</span>
+
+<span class="comment">// 1. Close the current active node</span>
+<span class="kw">await</span> WorkspaceOrgNode.<span class="fn">updateOne</span>(
+  { employeeId, effectiveTo: <span class="kw">null</span> },
+  { effectiveTo: <span class="kw">new</span> <span class="fn">Date</span>() }          <span class="comment">// seal with current timestamp</span>
+);
+
+<span class="comment">// 2. Create the new node</span>
+<span class="kw">await</span> WorkspaceOrgNode.<span class="fn">create</span>({
+  employeeId,
+  ancestorPath:  [newManager, skip, ceo],  <span class="comment">// chain up to root</span>
+  effectiveFrom: <span class="kw">new</span> <span class="fn">Date</span>(),
+  effectiveTo:   <span class="kw">null</span>,                    <span class="comment">// null = currently active</span>
+  depth:         <span class="num">3</span>,
+  departmentId,
+  matrixManagerIds: []
+});</code></pre>
+
+      <p>
+        This allows the compensation engine to call <code>getManagementChain(employeeId)</code> and
+        reconstruct the exact reporting chain at any historical date — critical for auditing comp
+        approval routing decisions after the fact.
+      </p>
+    </section>
+
+    <!-- ──────────────────────────── SECTION 19 ── -->
+    <section id="notifications">
+      <h2>19. Notification Events</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event</th><th>Trigger</th><th>Recipient</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><code>review_opened</code></td><td>HR creates review for employee</td><td>Employee</td><td>normal</td></tr>
+            <tr><td><code>review_submitted</code></td><td>Employee submits self-assessment</td><td>HR admins + manager</td><td>normal</td></tr>
+            <tr><td><code>review_finalized</code></td><td>HR finalizes review</td><td>Employee</td><td>high</td></tr>
+            <tr><td><code>comp_recommended</code></td><td>Manager recommends increment (single-step)</td><td>HR admins</td><td>high</td></tr>
+            <tr><td><code>comp_endorsed_needed</code></td><td>Two-step flow initiated</td><td>Skip-level manager</td><td>high</td></tr>
+            <tr><td><code>comp_ready_for_signoff</code></td><td>Skip-level endorses step 1</td><td>HR admins</td><td>high</td></tr>
+            <tr><td><code>comp_approved</code></td><td>HR gives final sign-off</td><td>Employee</td><td>high</td></tr>
+            <tr><td><code>comp_rejected</code></td><td>Any step rejects compensation</td><td>Recommending manager</td><td>normal</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Footer ── -->
+    <hr class="divider" />
+    <div style="text-align:center;padding:20px 0 40px;color:var(--neutral-6);font-size:12px">
+      <p>HRMS PMS Engine Guide · Built on Next.js 16 + MongoDB · AES-256-GCM · Multi-tenant</p>
+      <p style="margin-top:4px">
+        Source:
+        <code>src/models/workspace.models.ts</code> ·
+        <code>src/app/api/ws/performance/</code> ·
+        <code>src/components/pms/</code>
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active sidebar link on scroll
+  const links = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('section[id], div[id]');
+
+  function setActive() {
+    let current = '';
+    sections.forEach((s) => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    links.forEach((l) => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
+</script>
+</body>
+</html>
